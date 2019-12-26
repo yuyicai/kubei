@@ -28,7 +28,6 @@ func Kubeadm(tmplName, nodeName string, kubeadmCfg *rundata.Kubeadm) (string, er
 	}
 
 	t, err := template.New(Init).Parse(dedent.Dedent(`
-        swapoff -a
         kubeadm init \
           --image-repository {{ .imageRepository }} \
           --pod-network-cidr {{ .podNetworkCidr }} \
@@ -42,7 +41,6 @@ func Kubeadm(tmplName, nodeName string, kubeadmCfg *rundata.Kubeadm) (string, er
 	}
 
 	_, err = t.New(JoinNode).Parse(dedent.Dedent(`
-        swapoff -a
         kubeadm join {{ .controlPlaneEndpoint }} --token {{ .token }}  \
           --discovery-token-ca-cert-hash sha256:{{ .caCertHash }} \
           --node-name {{ .nodeName }} \
@@ -53,8 +51,6 @@ func Kubeadm(tmplName, nodeName string, kubeadmCfg *rundata.Kubeadm) (string, er
 	}
 
 	_, err = t.New(JoinControlPlane).Parse(dedent.Dedent(`
-        swapoff -a
-        yes | kubeadm reset
         kubeadm join {{ .controlPlaneEndpoint }} \
           --token {{ .token }} \
           --discovery-token-ca-cert-hash sha256:{{ .caCertHash }} \
@@ -86,8 +82,20 @@ func CopyAdminConfig() string {
 
 func SwapOff() string {
 	return dedent.Dedent(`
-        sudo mkdir $HOME/.kube
-        yes | sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config
-        sudo chown $(id -u):$(id -g) $HOME/.kube/config
+        sudo swapoff -a && sudo sysctl -w vm.swappiness=0
+        sudo sed -i '/swap/ s/^#*/#/' /etc/fstab
 	`)
+}
+
+func Iptables() string {
+	cmd := dedent.Dedent(`
+        cat <<EOF | tee /etc/sysctl.d/99-k8s-sysctl.conf 
+        net.ipv4.ip_forward=1
+        net.bridge.bridge-nf-call-iptables=1
+        net.bridge.bridge-nf-call-arptables=1
+        net.bridge.bridge-nf-call-ip6tables=1
+        EOF
+        sysctl --system
+	`)
+	return cmd
 }

@@ -19,7 +19,7 @@ const (
 	JumpServer           = "jump-server"
 )
 
-func AddCriConfigFlags(flagSet *flag.FlagSet, options *Cri) {
+func AddContainerRuntimeConfigFlags(flagSet *flag.FlagSet, options *ContainerRuntime) {
 	flagSet.StringVar(
 		&options.Version, DockerVersion, options.Version,
 		"The Docker version.",

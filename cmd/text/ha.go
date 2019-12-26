@@ -16,19 +16,13 @@ func KubeletUnitFile(image string) string {
         ExecStart=
         ExecStart=/usr/bin/kubelet --address=127.0.0.1 --pod-manifest-path=/etc/kubernetes/manifests --pod-infra-container-image=%s --cgroup-driver=${cgroupDriver}
         Restart=always
-        EOF
-        swapoff -a
-        systemctl daemon-reload
-        systemctl restart kubelet`)
+        EOF`)
 
 	return fmt.Sprintf(cmdText, image)
 }
 
 func RemoveKubeletUnitFile() string {
-	cmdText := dedent.Dedent(`
-        rm -f /etc/systemd/system/kubelet.service.d/20-ha-service-manager.conf
-        systemctl daemon-reload
-        systemctl restart kubelet`)
+	cmdText := "rm -f /etc/systemd/system/kubelet.service.d/20-ha-service-manager.conf"
 	return cmdText
 }
 

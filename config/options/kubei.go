@@ -31,7 +31,7 @@ func (c *ClusterNodes) ApplyTo(data *rundata.ClusterNodes) {
 	}
 }
 
-func (c *Cri) ApplyTo(data *rundata.Cri) {
+func (c *ContainerRuntime) ApplyTo(data *rundata.ContainerRuntime) {
 	if c.Version != "" {
 		data.Version = c.Version
 	}
@@ -45,7 +45,7 @@ func (c *KubeComponent) ApplyTo(data *rundata.KubeComponent) {
 
 func (k *Kubei) ApplyTo(data *rundata.Kubei) {
 
-	k.Cri.ApplyTo(&data.Cri)
+	k.ContainerRuntime.ApplyTo(&data.ContainerRuntime)
 	k.ClusterNodes.ApplyTo(&data.ClusterNodes)
 	k.KubeComponent.ApplyTo(&data.Kube)
 

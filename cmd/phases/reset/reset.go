@@ -13,8 +13,8 @@ import (
 func NewResetPhase() workflow.Phase {
 	phase := workflow.Phase{
 		Name:         "reset",
-		Short:        "install Reset in all nodes",
-		Long:         "install Reset in all nodes",
+		Short:        "reset Kubernetes cluster",
+		Long:         "reset Kubernetes cluster",
 		InheritFlags: getResetPhaseFlags(),
 		Run:          runReset,
 	}

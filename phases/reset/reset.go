@@ -16,7 +16,7 @@ func Reset(nodes []*rundata.Node, apiDomainName string) error {
 		g.Go(func() error {
 			klog.V(2).Infof("[%s] [Reset] Resetting node", node.HostInfo.Host)
 			if err := reset(node, apiDomainName); err != nil {
-				return fmt.Errorf("[%s] Failed to reset node", err)
+				return fmt.Errorf("[%s] Failed to reset node: %v", node.HostInfo.Host, err)
 			}
 			klog.Infof("[%s] [Reset] Successfully Reset node", node.HostInfo.Host)
 			return nil

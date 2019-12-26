@@ -7,11 +7,6 @@ func ResetHosts(apiDomainName string) string {
 	return fmt.Sprintf(cmdText, apiDomainName)
 }
 
-func ResetKubeadm() string {
-
-	return ""
-}
-
 func RemoveKube() string {
 
 	return ""

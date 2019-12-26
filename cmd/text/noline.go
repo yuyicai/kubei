@@ -37,20 +37,12 @@ func (Apt) Docker() string {
         }
         EOF
         mkdir -p /etc/systemd/system/docker.service.d
-        systemctl daemon-reload && systemctl enable docker && systemctl restart docker
 		`)
 	return cmd
 }
 
 func (Apt) KubeComponent() string {
 	cmd := dedent.Dedent(`
-        cat <<EOF | tee /etc/sysctl.d/99-k8s-sysctl.conf 
-        net.ipv4.ip_forward=1
-        net.bridge.bridge-nf-call-iptables=1
-        net.bridge.bridge-nf-call-arptables=1
-        net.bridge.bridge-nf-call-ip6tables=1
-        EOF
-        sysctl --system
         sudo apt update && sudo apt install -y apt-transport-https curl
         curl -s https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | sudo apt-key add -
         cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
@@ -59,7 +51,6 @@ func (Apt) KubeComponent() string {
         sudo apt update
         sudo apt install -y --allow-change-held-packages kubelet kubeadm kubectl
         sudo apt-mark hold kubelet kubeadm kubectl
-        systemctl daemon-reload && systemctl enable kubelet && systemctl restart kubelet
 	`)
 	return cmd
 }
@@ -92,20 +83,12 @@ func (Yum) Docker() string {
         }
         EOF
         mkdir -p /etc/systemd/system/docker.service.d
-        systemctl daemon-reload && systemctl enable docker && systemctl restart docker
     `)
 	return cmd
 }
 
 func (Yum) KubeComponent() string {
 	cmd := dedent.Dedent(`
-        cat <<EOF | tee /etc/sysctl.d/99-k8s-sysctl.conf 
-        net.ipv4.ip_forward=1
-        net.bridge.bridge-nf-call-iptables=1
-        net.bridge.bridge-nf-call-arptables=1
-        net.bridge.bridge-nf-call-ip6tables=1
-        EOF
-        sysctl --system
         cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo
         [kubernetes]
         name=Kubernetes
@@ -118,12 +101,11 @@ func (Yum) KubeComponent() string {
         setenforce 0
         sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
         yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-        systemctl daemon-reload && systemctl enable kubelet && systemctl restart kubelet
     `)
 	return cmd
 }
 
-func NewCriText(installationType int) DocekrText {
+func NewContainerRuntimeText(installationType int) DocekrText {
 	switch installationType {
 	case rundata.Apt:
 		return &Apt{}

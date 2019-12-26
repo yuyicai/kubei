@@ -8,7 +8,7 @@ type Kubeadm struct {
 
 type Kubei struct {
 	ClusterNodes  ClusterNodes
-	Cri           Cri
+	ContainerRuntime           ContainerRuntime
 	KubeComponent KubeComponent
 	JumpServer    map[string]string
 }
@@ -26,7 +26,7 @@ type ClusterNodes struct {
 	Workers []string
 }
 
-type Cri struct {
+type ContainerRuntime struct {
 	Version string
 }
 
@@ -47,7 +47,7 @@ type Networking struct {
 func NewKubei() *Kubei {
 	return &Kubei{
 		ClusterNodes:  ClusterNodes{},
-		Cri:           Cri{},
+		ContainerRuntime:           ContainerRuntime{},
 		KubeComponent: KubeComponent{},
 	}
 }

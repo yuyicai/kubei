@@ -4,6 +4,7 @@ import (
 	"fmt"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
 	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/phases/system"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
@@ -23,22 +24,32 @@ func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 	for _, node := range cfg.ClusterNodes.Worker {
 		node := node
 		g.Go(func() error {
+
+			if err := system.SwapOff(node); err != nil {
+				return err
+			}
+
+			if err := iptables(node); err != nil {
+				return err
+			}
+
 			if cfg.IsHA {
-				if err := setHost(node, "127.0.0.1", apiDomainName); err != nil {
-					return fmt.Errorf("[%s] Failed to set /etc/hosts: %v", node.HostInfo.Host, err)
+				if err := system.SetHost(node, "127.0.0.1", apiDomainName); err != nil {
+					return err
 				}
 
 				klog.Infof("[%s] [slb] Setting up the local SLB", node.HostInfo.Host)
-				if err := ha(mastersIP, node, kubeadmCfg); err != nil {
-					return fmt.Errorf("[%s] Failed to set up the local SLB: ", node.HostInfo.Host, err)
+				if err := localSLB(mastersIP, node, kubeadmCfg); err != nil {
+					return fmt.Errorf("[%s] Failed to set up the local SLB: %v", node.HostInfo.Host, err)
 				}
 
 				klog.Infof("[%s] [slb] Successfully set up the local SLB", node.HostInfo.Host)
 			} else {
 				// set /etc/hosts
-				if err := setHost(node, mastersIP[0], apiDomainName); err != nil {
-					return fmt.Errorf("[%s] Failed to set /etc/hosts: %v", node.HostInfo.Host, err)
+				if err := system.SetHost(node, mastersIP[0], apiDomainName); err != nil {
+					return err
 				}
+
 			}
 
 			// join worker node
@@ -70,7 +81,7 @@ func joinNode(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	return nil
 }
 
-func ha(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
+func localSLB(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	text, err := cmdtext.NginxConf(masters, "6443")
 	if err != nil {
 		return err
@@ -87,11 +98,24 @@ func ha(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error
 		return err
 	}
 
-	if err := checkHealth(node, fmt.Sprintf("https://%s/%s", kubeadmCfg.ControlPlaneEndpoint, "healthz"), 2*time.Second, 4*time.Minute); err != nil {
+	klog.V(2).Infof("[%s] [restart] restart kubelet to boot up the nginx proxy as static Pod", node.HostInfo.Host)
+
+	if err := system.Restart("kubelet", node); err != nil {
+		return err
+	}
+
+	interval := 2 * time.Second
+	timeout := 6 * time.Minute
+	klog.V(2).Infof("[%s] [slb] Waiting for the kubelet to boot up the nginx proxy as static Pod. This can take up to %v", node.HostInfo.Host, timeout)
+	if err := checkHealth(node, fmt.Sprintf("https://%s/%s", kubeadmCfg.ControlPlaneEndpoint, "healthz"), interval, timeout); err != nil {
 		return err
 	}
 
 	if err := node.SSH.Run(cmdtext.RemoveKubeletUnitFile()); err != nil {
+		return err
+	}
+
+	if err := system.Restart("kubelet", node); err != nil {
 		return err
 	}
 
@@ -112,5 +136,13 @@ func checkHealth(node *rundata.Node, url string, interval, timeout time.Duration
 		return err
 	}
 
+	return nil
+}
+
+func iptables(node *rundata.Node) error {
+	klog.V(2).Infof("[%s] [iptables] set up iptables", node.HostInfo.Host)
+	if err := node.SSH.Run(cmdtext.Iptables()); err != nil {
+		return fmt.Errorf("[%s] [iptables] Failed set up iptables: %v", node.HostInfo.Host, err)
+	}
 	return nil
 }

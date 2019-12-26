@@ -12,8 +12,8 @@ import (
 func NewKubeComponentPhase() workflow.Phase {
 	phase := workflow.Phase{
 		Name:         "kube",
-		Short:        "install kube in all nodes",
-		Long:         "install kube in all nodes",
+		Short:        "install Kubernetes component",
+		Long:         "install Kubernetes component",
 		InheritFlags: getKubeComponentPhaseFlags(),
 		Run:          runKubeComponent,
 	}
