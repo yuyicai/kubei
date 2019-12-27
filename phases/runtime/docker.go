@@ -1,4 +1,4 @@
-package container_runtime
+package runtime
 
 import (
 	"fmt"
@@ -14,16 +14,16 @@ func InstallDocker(nodes []*rundata.Node) error {
 	for _, node := range nodes {
 		node := node
 		g.Go(func() error {
-			klog.Infof("[%s] [container-runtime] Installing Docker", node.HostInfo.Host)
+			klog.Infof("[%s] [container-engine] Installing Docker", node.HostInfo.Host)
 			if err := installDocker(node); err != nil {
-				return fmt.Errorf("[%s] [container-runtime] Failed to install Docker: %v", node.HostInfo.Host, err)
+				return fmt.Errorf("[%s] [container-engine] Failed to install Docker: %v", node.HostInfo.Host, err)
 			}
 
 			if err := system.Restart("docker", node); err != nil {
 				return err
 			}
 
-			klog.Infof("[%s] [container-runtime] Successfully installed Docker", node.HostInfo.Host)
+			klog.Infof("[%s] [container-engine] Successfully installed Docker", node.HostInfo.Host)
 			return nil
 		})
 	}
@@ -36,7 +36,7 @@ func InstallDocker(nodes []*rundata.Node) error {
 }
 
 func installDocker(node *rundata.Node) error {
-	cmdText := cmdtext.NewContainerRuntimeText(node.InstallationType)
+	cmdText := cmdtext.NewcontainerEngineText(node.InstallationType)
 	if err := node.SSH.Run(cmdText.Docker()); err != nil {
 		return err
 	}

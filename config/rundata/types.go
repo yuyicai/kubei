@@ -5,11 +5,11 @@ import (
 )
 
 type Kubei struct {
-	ClusterNodes     ClusterNodes
-	ContainerRuntime ContainerRuntime
-	Kube             KubeComponent
-	JumpServer       JumpServer
-	IsHA             bool
+	ClusterNodes    ClusterNodes
+	ContainerEngine containerEngine
+	Kube            KubeComponent
+	JumpServer      JumpServer
+	IsHA            bool
 }
 
 type ClusterNodes struct {
@@ -43,7 +43,7 @@ type HostInfo struct {
 	Port     string
 }
 
-type ContainerRuntime struct {
+type ContainerEngine struct {
 	Version string
 }
 
@@ -71,9 +71,9 @@ type Token struct {
 
 func NewKubei() *Kubei {
 	return &Kubei{
-		ClusterNodes:     ClusterNodes{},
-		ContainerRuntime: ContainerRuntime{},
-		Kube:             KubeComponent{},
+		ClusterNodes:    ClusterNodes{},
+		containerEngine: containerEngine{},
+		Kube:            KubeComponent{},
 	}
 }
 
