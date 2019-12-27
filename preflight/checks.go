@@ -46,7 +46,7 @@ func checkSSH(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 
 		if jumpServer.IsUse {
 			klog.Infof("[%s] [preflight] Checking SSH connection (through jump server %s)", userInfo.Host, jumpServer.HostInfo.Host)
-			node.SSH, err = ssh.ConnectByJumpServer(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, jumpServer.Client)
+			node.SSH, err = ssh.ConnectByJumpServer(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key, jumpServer.Client)
 			if err != nil {
 				return err
 			}
@@ -54,7 +54,7 @@ func checkSSH(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 
 			//Set up ssh connection direct
 			klog.Infof("[%s] [preflight] Checking SSH connection", userInfo.Host)
-			node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password)
+			node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key)
 			if err != nil {
 				return err
 			}
@@ -84,7 +84,7 @@ func jumpServerCheck(jumpServer *rundata.JumpServer) error {
 		hostInfo := jumpServer.HostInfo
 		klog.Infof("[preflight] Checking jump server %s", hostInfo.Host)
 		var err error
-		jumpServer.Client, err = ssh.Connect(hostInfo.Host, hostInfo.Port, hostInfo.User, hostInfo.Password)
+		jumpServer.Client, err = ssh.Connect(hostInfo.Host, hostInfo.Port, hostInfo.User, hostInfo.Password, hostInfo.Key)
 		if err != nil {
 			return err
 		}

@@ -3,8 +3,10 @@ package ssh
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io"
+	"io/ioutil"
 	"k8s.io/klog"
 	"net"
 )
@@ -14,13 +16,20 @@ type Client struct {
 	host   string
 }
 
-func Connect(host, port, user, passwd string) (*Client, error) {
+func Connect(host, port, user, passwd, key string) (*Client, error) {
 	config := &ssh.ClientConfig{
-		User: user,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(passwd),
-		},
+		User:            user,
 		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
+	}
+
+	if key != "" {
+		signer, err := makePrivateKeySignerFromFile(key)
+		if err != nil {
+			return nil, err
+		}
+		config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
+	} else {
+		config.Auth = []ssh.AuthMethod{ssh.Password(passwd)}
 	}
 
 	client, err := ssh.Dial("tcp", net.JoinHostPort(host, port), config)
@@ -30,13 +39,20 @@ func Connect(host, port, user, passwd string) (*Client, error) {
 	return &Client{client: client, host: host}, nil
 }
 
-func ConnectByJumpServer(host, port, user, passwd string, jumpServer *Client) (*Client, error) {
+func ConnectByJumpServer(host, port, user, passwd, key string, jumpServer *Client) (*Client, error) {
 	config := &ssh.ClientConfig{
-		User: user,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(passwd),
-		},
+		User:            user,
 		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
+	}
+
+	if key != "" {
+		signer, err := makePrivateKeySignerFromFile(key)
+		if err != nil {
+			return nil, err
+		}
+		config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
+	} else {
+		config.Auth = []ssh.AuthMethod{ssh.Password(passwd)}
 	}
 
 	conn, err := jumpServer.client.Dial("tcp", net.JoinHostPort(host, port))
@@ -49,6 +65,21 @@ func ConnectByJumpServer(host, port, user, passwd string, jumpServer *Client) (*
 	}
 
 	return &Client{client: ssh.NewClient(ncc, chans, reqs), host: host}, nil
+}
+
+func makePrivateKeySignerFromFile(key string) (ssh.Signer, error) {
+
+	buffer, err := ioutil.ReadFile(key)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read private key %s: %v", key, err)
+	}
+
+	signer, err := ssh.ParsePrivateKey(buffer)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse private key: %v", err)
+	}
+
+	return signer, nil
 }
 
 func (c *Client) Close() error {

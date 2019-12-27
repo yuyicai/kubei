@@ -29,6 +29,7 @@ func getResetPhaseFlags() []string {
 		options.Password,
 		options.Port,
 		options.User,
+		options.Key,
 	}
 	return flags
 }
