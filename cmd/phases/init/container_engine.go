@@ -3,24 +3,24 @@ package phases
 import (
 	"errors"
 	"github.com/yuyicai/kubei/config/options"
-	runtimephases "github.com/yuyicai/kubei/phases/container-runtime"
+	runtimephases "github.com/yuyicai/kubei/phases/runtime"
 	"github.com/yuyicai/kubei/preflight"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 )
 
-// NewContainerRuntimePhase creates a kubei workflow phase that implements handling of container-runtime.
-func NewContainerRuntimePhase() workflow.Phase {
+// NewcontainerEnginePhase creates a kubei workflow phase that implements handling of runtime.
+func NewcontainerEnginePhase() workflow.Phase {
 	phase := workflow.Phase{
-		Name:         "container-runtime",
+		Name:         "runtime",
 		Short:        "install container runtime",
 		Long:         "install container runtime",
-		InheritFlags: getContainerRuntimePhaseFlags(),
-		Run:          runContainerRuntime,
+		InheritFlags: getcontainerEnginePhaseFlags(),
+		Run:          runcontainerEngine,
 	}
 	return phase
 }
 
-func getContainerRuntimePhaseFlags() []string {
+func getcontainerEnginePhaseFlags() []string {
 	flags := []string{
 		options.JumpServer,
 		options.DockerVersion,
@@ -33,10 +33,10 @@ func getContainerRuntimePhaseFlags() []string {
 	return flags
 }
 
-func runContainerRuntime(c workflow.RunData) error {
+func runcontainerEngine(c workflow.RunData) error {
 	data, ok := c.(InitData)
 	if !ok {
-		return errors.New("container-runtime phase invoked with an invalid data struct")
+		return errors.New("runtime phase invoked with an invalid data struct")
 	}
 
 	cfg := data.Cfg()

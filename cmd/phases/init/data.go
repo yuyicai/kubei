@@ -6,7 +6,7 @@ import (
 
 type InitData interface {
 	Cluster() *rundata.ClusterNodes
-	ContainerRuntime() *rundata.ContainerRuntime
+	ContainerEngine() *rundata.ContainerEngine
 	Kube() *rundata.KubeComponent
 	Cfg() *rundata.Kubei
 	KubeadmCfg() *rundata.Kubeadm

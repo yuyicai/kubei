@@ -105,7 +105,7 @@ func (Yum) KubeComponent() string {
 	return cmd
 }
 
-func NewContainerRuntimeText(installationType int) DocekrText {
+func NewcontainerEngineText(installationType int) DocekrText {
 	switch installationType {
 	case rundata.Apt:
 		return &Apt{}

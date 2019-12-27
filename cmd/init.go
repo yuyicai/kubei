@@ -59,7 +59,7 @@ func NewCmdInit(out io.Writer, initOptions *initOptions) *cobra.Command {
 	options.AddKubeadmConfigFlags(cmd.Flags(), initOptions.kubeadm)
 
 	// initialize the workflow runner with the list of phases
-	initRunner.AppendPhase(phases.NewContainerRuntimePhase())
+	initRunner.AppendPhase(phases.NewcontainerEnginePhase())
 	initRunner.AppendPhase(phases.NewKubeComponentPhase())
 	initRunner.AppendPhase(phases.NewKubeadmPhase())
 
@@ -77,7 +77,7 @@ func NewCmdInit(out io.Writer, initOptions *initOptions) *cobra.Command {
 }
 
 func addInitConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
-	options.AddContainerRuntimeConfigFlags(flagSet, &k.ContainerRuntime)
+	options.AddcontainerEngineConfigFlags(flagSet, &k.ContainerEngine)
 	options.AddPublicUserInfoConfigFlags(flagSet, &k.ClusterNodes.PublicHostInfo)
 	options.AddKubeClusterNodesConfigFlags(flagSet, &k.ClusterNodes)
 	options.AddKubeComponentConfigFlags(flagSet, &k.KubeComponent)
@@ -114,8 +114,8 @@ func (d *initData) Cluster() *rundata.ClusterNodes {
 	return &d.kubei.ClusterNodes
 }
 
-func (d *initData) ContainerRuntime() *rundata.ContainerRuntime {
-	return &d.kubei.ContainerRuntime
+func (d *initData) ContainerEngine() *rundata.ContainerEngine {
+	return &d.kubei.ContainerEngine
 }
 
 func (d *initData) Kube() *rundata.KubeComponent {
