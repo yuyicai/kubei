@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/yuyicai/kubei/config/options"
 	kubeadmphases "github.com/yuyicai/kubei/phases/kubeadm"
+	networkphases "github.com/yuyicai/kubei/phases/network"
 	"github.com/yuyicai/kubei/preflight"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
@@ -60,6 +61,11 @@ func runKubeadm(c workflow.RunData) error {
 
 	// init master0
 	if err := kubeadmphases.InitMaster(cluster.Masters[0], kubeadmCfg); err != nil {
+		return err
+	}
+
+	// add network plugin
+	if err := networkphases.Flannel(cluster.Masters[0], kubeadmCfg.Networking.PodSubnet, "quay.azk8s.cn/coreos/flannel:v0.11.0-amd64", "vxlan"); err != nil {
 		return err
 	}
 
