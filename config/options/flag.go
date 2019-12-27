@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	Key                  = "key"
 	Port                 = "port"
 	Password             = "password"
 	User                 = "user"
@@ -48,17 +49,22 @@ func AddKubeClusterNodesConfigFlags(flagSet *flag.FlagSet, options *ClusterNodes
 func AddPublicUserInfoConfigFlags(flagSet *flag.FlagSet, options *PublicHostInfo) {
 	flagSet.StringVar(
 		&options.User, User, "root",
-		"Public user of the nodes.",
+		"SSH user of the nodes.",
 	)
 
 	flagSet.StringVar(
 		&options.Password, Password, options.Password,
-		"Public password of the nodes.",
+		"SSH password of the nodes.",
 	)
 
 	flagSet.StringVar(
-		&options.Port, "port", "22",
-		"Public port of the nodes.",
+		&options.Port, Port, "22",
+		"SSH port of the nodes.",
+	)
+
+	flagSet.StringVar(
+		&options.Key, Key, options.Key,
+		"SSH key of the nodes.",
 	)
 }
 
@@ -88,6 +94,6 @@ func AddImageMetaFlags(flagSet *flag.FlagSet, imageRepository *string) {
 
 func AddJumpServerFlags(flagSet *flag.FlagSet, userInfo *map[string]string) {
 	flagSet.StringToStringVar(userInfo, JumpServer, *userInfo,
-		"Jump server user info, apply with \"--jump-server host=IP,port=22,user=your-user,password=your-password\"",
+		"Jump server user info, apply with \"--jump-server host=IP,port=22,user=your-user,password=your-password,key=key-path\"",
 	)
 }

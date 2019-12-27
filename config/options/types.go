@@ -14,6 +14,7 @@ type Kubei struct {
 }
 
 type PublicHostInfo struct {
+	Key      string
 	User     string
 	Password string
 	Port     string

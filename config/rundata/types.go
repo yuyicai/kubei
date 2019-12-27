@@ -41,6 +41,7 @@ type HostInfo struct {
 	User     string
 	Password string
 	Port     string
+	Key      string
 }
 
 type ContainerRuntime struct {

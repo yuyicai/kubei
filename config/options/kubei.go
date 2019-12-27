@@ -16,14 +16,17 @@ func (c *ClusterNodes) ApplyTo(data *rundata.ClusterNodes) {
 	nodes := append(data.Masters, data.Worker...)
 
 	for _, v := range nodes {
-		if v.HostInfo.Password == "" {
+		if v.HostInfo.Password == "" && c.PublicHostInfo.Password != "" {
 			v.HostInfo.Password = c.PublicHostInfo.Password
 		}
-		if v.HostInfo.User == "" {
+		if v.HostInfo.User == "" && c.PublicHostInfo.User != "" {
 			v.HostInfo.User = c.PublicHostInfo.User
 		}
-		if v.HostInfo.Port == "" {
+		if v.HostInfo.Port == "" && c.PublicHostInfo.Port != "" {
 			v.HostInfo.Port = c.PublicHostInfo.Port
+		}
+		if v.HostInfo.Key == "" && c.PublicHostInfo.Key != "" {
+			v.HostInfo.Key = c.PublicHostInfo.Key
 		}
 		if v.Name == "" {
 			v.Name = v.HostInfo.Host
