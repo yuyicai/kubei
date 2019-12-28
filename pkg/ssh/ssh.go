@@ -5,18 +5,21 @@ import (
 	"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"io/ioutil"
 	"k8s.io/klog"
 	"net"
+	"strings"
 )
 
 type Client struct {
-	client *ssh.Client
-	host   string
+	client   *ssh.Client
+	host     string
+	password string
 }
 
-func Connect(host, port, user, passwd, key string) (*Client, error) {
+func Connect(host, port, user, password, key string) (*Client, error) {
 	config := &ssh.ClientConfig{
 		User:            user,
 		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
@@ -29,17 +32,17 @@ func Connect(host, port, user, passwd, key string) (*Client, error) {
 		}
 		config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 	} else {
-		config.Auth = []ssh.AuthMethod{ssh.Password(passwd)}
+		config.Auth = []ssh.AuthMethod{ssh.Password(password)}
 	}
 
 	client, err := ssh.Dial("tcp", net.JoinHostPort(host, port), config)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{client: client, host: host}, nil
+	return &Client{client: client, host: host, password: password}, nil
 }
 
-func ConnectByJumpServer(host, port, user, passwd, key string, jumpServer *Client) (*Client, error) {
+func ConnectByJumpServer(host, port, user, password, key string, jumpServer *Client) (*Client, error) {
 	config := &ssh.ClientConfig{
 		User:            user,
 		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
@@ -52,7 +55,7 @@ func ConnectByJumpServer(host, port, user, passwd, key string, jumpServer *Clien
 		}
 		config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 	} else {
-		config.Auth = []ssh.AuthMethod{ssh.Password(passwd)}
+		config.Auth = []ssh.AuthMethod{ssh.Password(password)}
 	}
 
 	conn, err := jumpServer.client.Dial("tcp", net.JoinHostPort(host, port))
@@ -64,7 +67,7 @@ func ConnectByJumpServer(host, port, user, passwd, key string, jumpServer *Clien
 		return nil, err
 	}
 
-	return &Client{client: ssh.NewClient(ncc, chans, reqs), host: host}, nil
+	return &Client{client: ssh.NewClient(ncc, chans, reqs), host: host, password: password}, nil
 }
 
 func makePrivateKeySignerFromFile(key string) (ssh.Signer, error) {
@@ -95,11 +98,26 @@ func (c *Client) Run(cmd string) error {
 	}
 	defer session.Close()
 
-	var stdout io.Reader
-	stdout, err = session.StdoutPipe()
+	stdout, err := session.StdoutPipe()
 	if err != nil {
 		return err
 	}
+	stderr, err := session.StderrPipe()
+	if err != nil {
+		return err
+	}
+	in, err := session.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	g := errgroup.Group{}
+	g.Go(func() error {
+		if err := sendSudoPassword(c.password, c.host, in, stderr); err != nil {
+			return err
+		}
+		return nil
+	})
 
 	if err := session.Start(cmd); err != nil {
 		return err
@@ -111,6 +129,10 @@ func (c *Client) Run(cmd string) error {
 		if str != "" {
 			klog.V(8).Infof("[%s] [remote-output] %s", c.host, str)
 		}
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	return session.Wait()
@@ -126,14 +148,31 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 	defer session.Close()
 
 	var buf bytes.Buffer
-	var stdout io.Reader
-	stdout, err = session.StdoutPipe()
+
+	stdout, err := session.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
+	stderr, err := session.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+	in, err := session.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+
 	if err := session.Start(cmd); err != nil {
 		return nil, err
 	}
+
+	g := errgroup.Group{}
+	g.Go(func() error {
+		if err := sendSudoPassword(c.password, c.host, in, stderr); err != nil {
+			return err
+		}
+		return nil
+	})
 
 	tee := io.TeeReader(stdout, &buf)
 	scanner := bufio.NewScanner(tee)
@@ -145,5 +184,36 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 		}
 	}
 
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
 	return buf.Bytes(), session.Wait()
+}
+
+func sendSudoPassword(password, host string, in io.WriteCloser, out io.Reader) error {
+	var line string
+
+	r := bufio.NewReader(out)
+	for {
+		b, err := r.ReadByte()
+		if err != nil {
+			break
+		}
+		if b == byte('\n') {
+			line = ""
+			continue
+		}
+
+		line += string(b)
+		if line != "" && strings.HasPrefix(line, "[sudo] password for ") && strings.HasSuffix(line, ": ") {
+			_, err = in.Write([]byte(password + "\n"))
+			if err != nil {
+				return err
+			}
+			line = ""
+			klog.V(5).Infof("[%s] [commands-sudo] send the sudo password to remote host", host)
+		}
+	}
+	return nil
 }
