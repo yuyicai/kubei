@@ -36,7 +36,7 @@ func InstallDocker(nodes []*rundata.Node) error {
 }
 
 func installDocker(node *rundata.Node) error {
-	cmdText := cmdtext.NewcontainerEngineText(node.InstallationType)
+	cmdText := cmdtext.NewContainerEngineText(node.InstallationType)
 	if err := node.SSH.Run(cmdText.Docker()); err != nil {
 		return err
 	}

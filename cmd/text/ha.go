@@ -11,12 +11,13 @@ func KubeletUnitFile(image string) string {
 	cmdText := dedent.Dedent(`
         cgroupDriver=$(docker info --format '{{json .CgroupDriver}}' | sed 's/"//g')
         mkdir -p /etc/systemd/system/kubelet.service.d
-        cat << EOF | sudo tee /etc/systemd/system/kubelet.service.d/20-ha-service-manager.conf
+        cat << EOF | tee /etc/systemd/system/kubelet.service.d/20-ha-service-manager.conf
         [Service]
         ExecStart=
         ExecStart=/usr/bin/kubelet --address=127.0.0.1 --pod-manifest-path=/etc/kubernetes/manifests --pod-infra-container-image=%s --cgroup-driver=${cgroupDriver}
         Restart=always
-        EOF`)
+        EOF
+	`)
 
 	return fmt.Sprintf(cmdText, image)
 }
@@ -34,7 +35,7 @@ func NginxConf(masters []string, port string) (string, error) {
 
 	cmdText := dedent.Dedent(`
         mkdir -p /etc/kubernetes
-        cat <<EOF | sudo tee /etc/kubernetes/nginx.conf
+        cat <<EOF | tee /etc/kubernetes/nginx.conf
         error_log stderr notice;
         
         worker_processes 2;
@@ -75,7 +76,8 @@ func NginxConf(masters []string, port string) (string, error) {
           server_tokens off;
           autoindex off;
         }
-        EOF`)
+        EOF
+	`)
 
 	t, err := template.New("text").Parse(cmdText)
 	if err != nil {
@@ -128,6 +130,7 @@ func NginxManifest(nginxImage string) string {
             hostPath:
               path: /etc/kubernetes/nginx.conf
               type: FileOrCreate
-        EOF`)
+        EOF
+	`)
 	return fmt.Sprintf(cmdText, nginxImage)
 }

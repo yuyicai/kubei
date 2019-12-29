@@ -8,19 +8,19 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 )
 
-// NewcontainerEnginePhase creates a kubei workflow phase that implements handling of runtime.
-func NewcontainerEnginePhase() workflow.Phase {
+// NewContainerEnginePhase creates a kubei workflow phase that implements handling of runtime.
+func NewContainerEnginePhase() workflow.Phase {
 	phase := workflow.Phase{
 		Name:         "runtime",
 		Short:        "install container runtime",
 		Long:         "install container runtime",
-		InheritFlags: getcontainerEnginePhaseFlags(),
-		Run:          runcontainerEngine,
+		InheritFlags: getContainerEnginePhaseFlags(),
+		Run:          runContainerEngine,
 	}
 	return phase
 }
 
-func getcontainerEnginePhaseFlags() []string {
+func getContainerEnginePhaseFlags() []string {
 	flags := []string{
 		options.JumpServer,
 		options.DockerVersion,
@@ -34,7 +34,7 @@ func getcontainerEnginePhaseFlags() []string {
 	return flags
 }
 
-func runcontainerEngine(c workflow.RunData) error {
+func runContainerEngine(c workflow.RunData) error {
 	data, ok := c.(InitData)
 	if !ok {
 		return errors.New("runtime phase invoked with an invalid data struct")

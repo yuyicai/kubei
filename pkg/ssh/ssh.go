@@ -17,6 +17,7 @@ type Client struct {
 	client   *ssh.Client
 	host     string
 	password string
+	user     string
 }
 
 func Connect(host, port, user, password, key string) (*Client, error) {
@@ -91,7 +92,11 @@ func (c *Client) Close() error {
 
 func (c *Client) Run(cmd string) error {
 	//host, _, _ := net.SplitHostPort(c.client.RemoteAddr().String())
+	if c.user != "root" {
+		cmd = fmt.Sprintf("sudo -S bash -c '\nset -e\n%s'", cmd)
+	}
 	klog.V(7).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
+
 	session, err := c.client.NewSession()
 	if err != nil {
 		return err
@@ -111,6 +116,10 @@ func (c *Client) Run(cmd string) error {
 		return err
 	}
 
+	if err := session.Start(cmd); err != nil {
+		return err
+	}
+
 	g := errgroup.Group{}
 	g.Go(func() error {
 		if err := sendSudoPassword(c.password, c.host, in, stderr); err != nil {
@@ -119,15 +128,11 @@ func (c *Client) Run(cmd string) error {
 		return nil
 	})
 
-	if err := session.Start(cmd); err != nil {
-		return err
-	}
-
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		str := scanner.Text()
 		if str != "" {
-			klog.V(8).Infof("[%s] [remote-output] %s", c.host, str)
+			klog.V(8).Infof("[%s] [remote-stdout] %s", c.host, str)
 		}
 	}
 
@@ -140,10 +145,14 @@ func (c *Client) Run(cmd string) error {
 
 func (c *Client) RunOut(cmd string) ([]byte, error) {
 	//host, _, _ := net.SplitHostPort(c.client.RemoteAddr().String())
+	if c.user != "root" {
+		cmd = fmt.Sprintf("sudo -S bash -c '\nset -e\n%s'", cmd)
+	}
 	klog.V(7).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
+
 	session, err := c.client.NewSession()
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	defer session.Close()
 
@@ -151,19 +160,19 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 
 	stdout, err := session.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	stderr, err := session.StderrPipe()
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	in, err := session.StdinPipe()
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 
 	if err := session.Start(cmd); err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 
 	g := errgroup.Group{}
@@ -180,7 +189,7 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 	for scanner.Scan() {
 		str := scanner.Text()
 		if str != "" {
-			klog.V(8).Infof("[%s] [remote-output] %s", c.host, str)
+			klog.V(8).Infof("[%s] [remote-stdout] %s", c.host, str)
 		}
 	}
 
@@ -201,6 +210,9 @@ func sendSudoPassword(password, host string, in io.WriteCloser, out io.Reader) e
 			break
 		}
 		if b == byte('\n') {
+			if line != "" {
+				klog.V(6).Infof("[%s] [remote-stderr] %s", host, line)
+			}
 			line = ""
 			continue
 		}
@@ -212,7 +224,7 @@ func sendSudoPassword(password, host string, in io.WriteCloser, out io.Reader) e
 				return err
 			}
 			line = ""
-			klog.V(5).Infof("[%s] [commands-sudo] send the sudo password to remote host", host)
+			klog.V(5).Infof("[%s] [sudo] send the sudo password to remote host", host)
 		}
 	}
 	return nil

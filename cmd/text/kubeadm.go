@@ -74,16 +74,19 @@ func Kubeadm(tmplName, nodeName string, kubeadmCfg *rundata.Kubeadm) (string, er
 
 func CopyAdminConfig() string {
 	return dedent.Dedent(`
-        sudo mkdir $HOME/.kube
-        yes | sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config
-        sudo chown $(id -u):$(id -g) $HOME/.kube/config
+        mkdir -p $HOME/.kube
+        yes | cp /etc/kubernetes/admin.conf $HOME/.kube/config
 	`)
+}
+
+func ChownKubectlConfig() string {
+	return "chown $SUDO_USER:$SUDO_UID $HOME/.kube/config"
 }
 
 func SwapOff() string {
 	return dedent.Dedent(`
-        sudo swapoff -a && sudo sysctl -w vm.swappiness=0
-        sudo sed -i '/swap/ s/^#*/#/' /etc/fstab
+        swapoff -a && sysctl -w vm.swappiness=0
+        sed -i "/swap/ s/^#*/#/" /etc/fstab
 	`)
 }
 

@@ -22,7 +22,7 @@ func (Apt) Docker() string {
         curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | apt-key add -
         add-apt-repository "deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
         apt update && apt -y install docker-ce docker-ce-cli containerd.io
-        cat > /etc/docker/daemon.json <<EOF
+        cat <<EOF | tee /etc/docker/daemon.json
         {
           "registry-mirrors": [
               "https://dockerhub.azk8s.cn",
@@ -37,20 +37,20 @@ func (Apt) Docker() string {
         }
         EOF
         mkdir -p /etc/systemd/system/docker.service.d
-		`)
+	`)
 	return cmd
 }
 
 func (Apt) KubeComponent() string {
 	cmd := dedent.Dedent(`
-        sudo apt update && sudo apt install -y apt-transport-https curl
-        curl -s https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | sudo apt-key add -
-        cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+        apt update && apt install -y apt-transport-https curl
+        curl -s https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add -
+        cat <<EOF | tee /etc/apt/sources.list.d/kubernetes.list
         deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
         EOF
-        sudo apt update
-        sudo apt install -y --allow-change-held-packages kubelet kubeadm kubectl
-        sudo apt-mark hold kubelet kubeadm kubectl
+        apt update
+        apt install -y --allow-change-held-packages kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl
 	`)
 	return cmd
 }
@@ -65,7 +65,7 @@ func (Yum) Docker() string {
           https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
         yum install -y docker-ce docker-ce-cli containerd.io
         mkdir /etc/docker
-        cat > /etc/docker/daemon.json <<EOF
+        cat <<EOF | tee /etc/docker/daemon.json
         {
           "registry-mirrors": [
               "https://dockerhub.azk8s.cn",
@@ -101,11 +101,11 @@ func (Yum) KubeComponent() string {
         setenforce 0
         sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
         yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-    `)
+	`)
 	return cmd
 }
 
-func NewcontainerEngineText(installationType int) DocekrText {
+func NewContainerEngineText(installationType int) DocekrText {
 	switch installationType {
 	case rundata.Apt:
 		return &Apt{}

@@ -6,7 +6,7 @@ import (
 
 type Kubei struct {
 	ClusterNodes    ClusterNodes
-	ContainerEngine containerEngine
+	ContainerEngine ContainerEngine
 	Kube            KubeComponent
 	JumpServer      JumpServer
 	IsHA            bool
@@ -73,7 +73,7 @@ type Token struct {
 func NewKubei() *Kubei {
 	return &Kubei{
 		ClusterNodes:    ClusterNodes{},
-		containerEngine: containerEngine{},
+		ContainerEngine: ContainerEngine{},
 		Kube:            KubeComponent{},
 	}
 }

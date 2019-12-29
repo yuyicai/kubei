@@ -20,7 +20,7 @@ const (
 	JumpServer           = "jump-server"
 )
 
-func AddcontainerEngineConfigFlags(flagSet *flag.FlagSet, options *containerEngine) {
+func AddContainerEngineConfigFlags(flagSet *flag.FlagSet, options *ContainerEngine) {
 	flagSet.StringVar(
 		&options.Version, DockerVersion, options.Version,
 		"The Docker version.",

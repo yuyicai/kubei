@@ -241,7 +241,8 @@ func Flannel(network, image, backendType string) (string, error) {
                 - name: flannel-cfg
                   configMap:
                     name: kube-flannel-cfg
-        EOF`)
+        EOF
+	`)
 
 	t, err := template.New("text").Parse(cmdText)
 	if err != nil {
