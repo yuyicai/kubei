@@ -26,7 +26,7 @@ type resetData struct {
 }
 
 // NewCmdreset returns "kubei reset" command.
-func NewCmdreset(out io.Writer, resetOptions *resetOptions) *cobra.Command {
+func NewCmdReset(out io.Writer, resetOptions *resetOptions) *cobra.Command {
 	if resetOptions == nil {
 		resetOptions = newResetOptions()
 	}
@@ -53,10 +53,12 @@ func NewCmdreset(out io.Writer, resetOptions *resetOptions) *cobra.Command {
 	// adds flags to the reset command
 	// reset command local flags could be eventually inherited by the sub-commands automatically generated for phases
 	addResetConfigFlags(cmd.Flags(), resetOptions.kubei)
-	options.AddKubeadmConfigFlags(cmd.Flags(), resetOptions.kubeadm)
+	options.AddControlPlaneEndpointFlags(cmd.Flags(), resetOptions.kubeadm)
 
 	// initialize the workflow runner with the list of phases
-	resetRunner.AppendPhase(phases.NewResetPhase())
+	resetRunner.AppendPhase(phases.NewKubeadmPhase())
+	resetRunner.AppendPhase(phases.NewKubeComponentPhase())
+	resetRunner.AppendPhase(phases.NewContainerEnginePhase())
 
 	// sets the rundata builder function, that will be used by the runner
 	// both when running the entire workflow or single phases
@@ -75,6 +77,7 @@ func addResetConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
 	options.AddPublicUserInfoConfigFlags(flagSet, &k.ClusterNodes.PublicHostInfo)
 	options.AddKubeClusterNodesConfigFlags(flagSet, &k.ClusterNodes)
 	options.AddJumpServerFlags(flagSet, &k.JumpServer)
+	options.AddResetFlags(flagSet, &k.Reset)
 }
 
 func newResetOptions() *resetOptions {

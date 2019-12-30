@@ -14,9 +14,6 @@ import (
 // InitMaster init master0
 func InitMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-
-	klog.Infof("[%s] [kubeadm-init] Initializing master0", node.HostInfo.Host)
-
 	if err := system.SetHost(node, "127.0.0.1", apiDomainName); err != nil {
 		return err
 	}
@@ -28,6 +25,8 @@ func InitMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	if err := iptables(node); err != nil {
 		return err
 	}
+
+	klog.Infof("[%s] [kubeadm-init] Initializing master0", node.HostInfo.Host)
 
 	output, err := initMaster(node, kubeadmCfg)
 	if err != nil {
@@ -67,7 +66,7 @@ func JoinControlPlane(masters []*rundata.Node, kubeadmCfg *rundata.Kubeadm) erro
 	for _, node := range masters[1:] {
 		node := node
 		g.Go(func() error {
-			klog.Infof("[%s] [kubeadm-join] Joining master nodes", node.HostInfo.Host)
+
 			if err := system.SetHost(node, masters[0].HostInfo.Host, apiDomainName); err != nil {
 				return err
 			}
@@ -80,9 +79,11 @@ func JoinControlPlane(masters []*rundata.Node, kubeadmCfg *rundata.Kubeadm) erro
 				return err
 			}
 
+			klog.Infof("[%s] [kubeadm-join] Joining master nodes", node.HostInfo.Host)
 			if err := joinControlPlane(node, kubeadmCfg); err != nil {
 				return err
 			}
+			klog.Infof("[%s] [kubeadm-join] Successfully joined master nodes", node.HostInfo.Host)
 
 			if err := copyAdminConfig(node); err != nil {
 				return err
@@ -91,7 +92,6 @@ func JoinControlPlane(masters []*rundata.Node, kubeadmCfg *rundata.Kubeadm) erro
 			if err := system.SetHost(node, "127.0.0.1", apiDomainName); err != nil {
 				return err
 			}
-			klog.Infof("[%s] [kubeadm-join] Successfully joined master nodes", node.HostInfo.Host)
 
 			return nil
 		})

@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -127,11 +128,11 @@ func checkHealth(node *rundata.Node, url string, interval, timeout time.Duration
 	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		var output []byte
 		output, _ = node.SSH.RunOut(fmt.Sprintf("curl -k %s", url))
-		if string(output) != "ok" {
-			return false, nil
+		if string(output) == "ok" {
+			return true, nil
 		}
 
-		return true, nil
+		return false, nil
 	}); err != nil {
 		return err
 	}
@@ -145,4 +146,25 @@ func iptables(node *rundata.Node) error {
 		return fmt.Errorf("[%s] [iptables] Failed set up iptables: %v", node.HostInfo.Host, err)
 	}
 	return nil
+}
+
+func CheckNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, bool) {
+	var str string
+	klog.Infof("[check] Waiting for nodes to become ready. This can take up to %v", timeout)
+	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
+		var output []byte
+		output, _ = node.SSH.RunOut("kubectl get nodes -owide")
+		str = string(output)
+		if strings.Contains(str, "NotReady") {
+			return false, nil
+		} else if strings.Contains(str, "Ready") {
+			return true, nil
+		}
+
+		return false, nil
+	}); err != nil {
+		return "", false
+	}
+
+	return str, true
 }

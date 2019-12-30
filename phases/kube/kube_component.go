@@ -9,13 +9,13 @@ import (
 	"k8s.io/klog"
 )
 
-func InstallKubeComponent(nodes []*rundata.Node) error {
+func InstallKubeComponent(version string, nodes []*rundata.Node) error {
 	g := errgroup.Group{}
 	for _, node := range nodes {
 		node := node
 		g.Go(func() error {
 			klog.Infof("[%s] [kube] Installing Kubernetes component", node.HostInfo.Host)
-			if err := installKubeComponent(node); err != nil {
+			if err := installKubeComponent(version, node); err != nil {
 				return fmt.Errorf("[%s] [kube] Failed to install Kubernetes component: %v", node.HostInfo.Host, err)
 			}
 
@@ -36,9 +36,13 @@ func InstallKubeComponent(nodes []*rundata.Node) error {
 	return nil
 }
 
-func installKubeComponent(node *rundata.Node) error {
+func installKubeComponent(version string, node *rundata.Node) error {
 	cmdText := cmdtext.NewKubeText(node.InstallationType)
-	if err := node.SSH.Run(cmdText.KubeComponent()); err != nil {
+	cmd, err := cmdText.KubeComponent(version)
+	if err != nil {
+		return err
+	}
+	if err := node.SSH.Run(cmd); err != nil {
 		return err
 	}
 	return nil

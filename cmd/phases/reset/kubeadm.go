@@ -9,19 +9,19 @@ import (
 	"net"
 )
 
-// NewResetPhase creates a kubei workflow phase that implements handling of reset.
-func NewResetPhase() workflow.Phase {
+// NewResetPhase creates a kubei workflow phase that implements handling of cluster.
+func NewKubeadmPhase() workflow.Phase {
 	phase := workflow.Phase{
-		Name:         "reset",
+		Name:         "cluster",
 		Short:        "reset Kubernetes cluster",
 		Long:         "reset Kubernetes cluster",
-		InheritFlags: getResetPhaseFlags(),
-		Run:          runReset,
+		InheritFlags: getKubeadmPhaseFlags(),
+		Run:          runKubeadm,
 	}
 	return phase
 }
 
-func getResetPhaseFlags() []string {
+func getKubeadmPhaseFlags() []string {
 	flags := []string{
 		options.JumpServer,
 		options.Masters,
@@ -34,7 +34,7 @@ func getResetPhaseFlags() []string {
 	return flags
 }
 
-func runReset(c workflow.RunData) error {
+func runKubeadm(c workflow.RunData) error {
 	data, ok := c.(ResetData)
 	if !ok {
 		return errors.New("reset phase invoked with an invalid rundata struct")
@@ -49,7 +49,7 @@ func runReset(c workflow.RunData) error {
 	}
 
 	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-	if err := resetphases.Reset(nodes, apiDomainName); err != nil {
+	if err := resetphases.ResetKubeadm(nodes, apiDomainName); err != nil {
 		return err
 	}
 

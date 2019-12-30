@@ -80,7 +80,6 @@ func addInitConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
 	options.AddContainerEngineConfigFlags(flagSet, &k.ContainerEngine)
 	options.AddPublicUserInfoConfigFlags(flagSet, &k.ClusterNodes.PublicHostInfo)
 	options.AddKubeClusterNodesConfigFlags(flagSet, &k.ClusterNodes)
-	options.AddKubeComponentConfigFlags(flagSet, &k.KubeComponent)
 	options.AddJumpServerFlags(flagSet, &k.JumpServer)
 }
 
@@ -116,10 +115,6 @@ func (d *initData) Cluster() *rundata.ClusterNodes {
 
 func (d *initData) ContainerEngine() *rundata.ContainerEngine {
 	return &d.kubei.ContainerEngine
-}
-
-func (d *initData) Kube() *rundata.KubeComponent {
-	return &d.kubei.Kube
 }
 
 func (d *initData) Cfg() *rundata.Kubei {

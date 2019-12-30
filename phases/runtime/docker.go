@@ -9,13 +9,13 @@ import (
 	"k8s.io/klog"
 )
 
-func InstallDocker(nodes []*rundata.Node) error {
+func InstallDocker(version string, nodes []*rundata.Node) error {
 	g := errgroup.Group{}
 	for _, node := range nodes {
 		node := node
 		g.Go(func() error {
 			klog.Infof("[%s] [container-engine] Installing Docker", node.HostInfo.Host)
-			if err := installDocker(node); err != nil {
+			if err := installDocker(version, node); err != nil {
 				return fmt.Errorf("[%s] [container-engine] Failed to install Docker: %v", node.HostInfo.Host, err)
 			}
 
@@ -35,9 +35,13 @@ func InstallDocker(nodes []*rundata.Node) error {
 	return nil
 }
 
-func installDocker(node *rundata.Node) error {
+func installDocker(version string, node *rundata.Node) error {
 	cmdText := cmdtext.NewContainerEngineText(node.InstallationType)
-	if err := node.SSH.Run(cmdText.Docker()); err != nil {
+	cmd, err := cmdText.Docker(version)
+	if err != nil {
+		return err
+	}
+	if err := node.SSH.Run(cmd); err != nil {
 		return err
 	}
 	return nil

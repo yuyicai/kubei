@@ -5,9 +5,9 @@ import (
 )
 
 type Kubei struct {
+	Reset           Reset
 	ClusterNodes    ClusterNodes
 	ContainerEngine ContainerEngine
-	Kube            KubeComponent
 	JumpServer      JumpServer
 	IsHA            bool
 }
@@ -48,11 +48,13 @@ type ContainerEngine struct {
 	Version string
 }
 
-type KubeComponent struct {
-	Version string
+type Reset struct {
+	RemoveContainerEngine bool
+	RemoveKubeComponent   bool
 }
 
 type Kubeadm struct {
+	Version              string
 	ControlPlaneEndpoint string
 	ImageRepository      string
 	Networking           Networking
@@ -74,7 +76,6 @@ func NewKubei() *Kubei {
 	return &Kubei{
 		ClusterNodes:    ClusterNodes{},
 		ContainerEngine: ContainerEngine{},
-		Kube:            KubeComponent{},
 	}
 }
 

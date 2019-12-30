@@ -1,15 +1,16 @@
 package options
 
 type Kubeadm struct {
+	Version              string
 	ControlPlaneEndpoint string
 	ImageRepository      string
 	Networking           Networking
 }
 
 type Kubei struct {
+	Reset           Reset
 	ClusterNodes    ClusterNodes
 	ContainerEngine ContainerEngine
-	KubeComponent   KubeComponent
 	JumpServer      map[string]string
 }
 
@@ -31,13 +32,14 @@ type ContainerEngine struct {
 	Version string
 }
 
-type KubeComponent struct {
-	Version string
-}
-
 type JumpServerHostInfo struct {
 	PublicHostInfo
 	Host string
+}
+
+type Reset struct {
+	RemoveContainerEngine bool
+	RemoveKubeComponent   bool
 }
 
 type Networking struct {
@@ -49,7 +51,6 @@ func NewKubei() *Kubei {
 	return &Kubei{
 		ClusterNodes:    ClusterNodes{},
 		ContainerEngine: ContainerEngine{},
-		KubeComponent:   KubeComponent{},
 	}
 }
 

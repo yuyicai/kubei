@@ -1,27 +1,40 @@
 package text
 
 import (
+	"bytes"
 	"github.com/lithammer/dedent"
 	"github.com/yuyicai/kubei/config/rundata"
+	"text/template"
 )
 
 type DocekrText interface {
-	Docker() string
+	Docker(string) (string, error)
+	RemoveDocker() string
 }
 
 type KubeText interface {
-	KubeComponent() string
+	KubeComponent(string) (string, error)
+	RemoveKubeComponent() string
 }
 
 type Apt struct {
 }
 
-func (Apt) Docker() string {
-	cmd := dedent.Dedent(`
+func (Apt) Docker(version string) (string, error) {
+	m := map[string]interface{}{
+		"version": version,
+	}
+	t, err := template.New("ver").Parse(dedent.Dedent(`
         apt update && apt -y install apt-transport-https ca-certificates curl software-properties-common
         curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | apt-key add -
         add-apt-repository "deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
-        apt update && apt -y install docker-ce docker-ce-cli containerd.io
+        apt update
+        {{- if ne .version "" }}
+        DOCKER_VER=$(apt-cache madison docker-ce | awk '/{{ .version }}/ {print$3}' | head -1)
+        apt -y install docker-ce=$DOCKER_VER docker-ce-cli=$DOCKER_VER containerd.io
+        {{- else }}
+        apt -y install docker-ce docker-ce-cli containerd.io
+        {{- end }}
         cat <<EOF | tee /etc/docker/daemon.json
         {
           "registry-mirrors": [
@@ -37,34 +50,75 @@ func (Apt) Docker() string {
         }
         EOF
         mkdir -p /etc/systemd/system/docker.service.d
-	`)
-	return cmd
+	`))
+	if err != nil {
+		return "", err
+	}
+
+	var cmdBuff bytes.Buffer
+	if err := t.Execute(&cmdBuff, m); err != nil {
+		return "", err
+	}
+
+	cmd := cmdBuff.String()
+	return cmd, nil
 }
 
-func (Apt) KubeComponent() string {
-	cmd := dedent.Dedent(`
+func (Apt) KubeComponent(version string) (string, error) {
+	m := map[string]interface{}{
+		"version": version,
+	}
+	t, err := template.New("ver").Parse(dedent.Dedent(`
         apt update && apt install -y apt-transport-https curl
         curl -s https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add -
         cat <<EOF | tee /etc/apt/sources.list.d/kubernetes.list
         deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
         EOF
         apt update
+        {{- if ne .version "" }}
+        KUBE_VER=$(apt-cache madison kubelet | awk '/{{ .version }}/ {print$3}' | head -1)
+        apt install -y --allow-change-held-packages kubelet=$KUBE_VER kubeadm=$KUBE_VER kubectl=$KUBE_VER
+        {{- else }}
         apt install -y --allow-change-held-packages kubelet kubeadm kubectl
+        {{- end }}
         apt-mark hold kubelet kubeadm kubectl
-	`)
-	return cmd
+	`))
+	if err != nil {
+		return "", err
+	}
+
+	var cmdBuff bytes.Buffer
+	if err := t.Execute(&cmdBuff, m); err != nil {
+		return "", err
+	}
+
+	cmd := cmdBuff.String()
+	return cmd, nil
+}
+
+func (Apt) RemoveDocker() string {
+	return "apt remove -y docker-ce docker-ce-cli containerd.io || true"
+}
+
+func (Apt) RemoveKubeComponent() string {
+	return "apt remove -y --allow-change-held-packages kubelet kubeadm kubectl || true"
 }
 
 type Yum struct {
 }
 
-func (Yum) Docker() string {
+func (Yum) Docker(version string) (string, error) {
 	cmd := dedent.Dedent(`
         yum install -y yum-utils device-mapper-persistent-data lvm2
         yum-config-manager --add-repo \
           https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+        {{- if ne .version "" }}
+        DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1)
+        yum install -y docker-ce-$DOCKER_VER docker-ce-cli-$DOCKER_VER containerd.io
+        {{- else }}
         yum install -y docker-ce docker-ce-cli containerd.io
-        mkdir /etc/docker
+        {{- end }}
+        mkdir -p /etc/docker
         cat <<EOF | tee /etc/docker/daemon.json
         {
           "registry-mirrors": [
@@ -84,10 +138,10 @@ func (Yum) Docker() string {
         EOF
         mkdir -p /etc/systemd/system/docker.service.d
     `)
-	return cmd
+	return cmd, nil
 }
 
-func (Yum) KubeComponent() string {
+func (Yum) KubeComponent(version string) (string, error) {
 	cmd := dedent.Dedent(`
         cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo
         [kubernetes]
@@ -100,9 +154,22 @@ func (Yum) KubeComponent() string {
         EOF
         setenforce 0
         sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+        {{- if ne .version "" }}
+        KUBE_VER=$(yum list kubelet --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1)
+        yum install -y kubelet-$KUBE_VER kubeadm-$KUBE_VER kubectl-$KUBE_VER --disableexcludes=kubernetes
+        {{- else }}
         yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+        {{- end }}
 	`)
-	return cmd
+	return cmd, nil
+}
+
+func (Yum) RemoveDocker() string {
+	return "yum remove -y docker-ce docker-ce-cli containerd.io || true"
+}
+
+func (Yum) RemoveKubeComponent() string {
+	return "yum remove -y kubelet kubeadm kubectl  || true"
 }
 
 func NewContainerEngineText(installationType int) DocekrText {

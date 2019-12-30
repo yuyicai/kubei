@@ -25,10 +25,14 @@ func Kubeadm(tmplName, nodeName string, kubeadmCfg *rundata.Kubeadm) (string, er
 		"token":                token.Token,
 		"caCertHash":           token.CaCertHash,
 		"certificateKey":       token.CertificateKey,
+		"version":              kubeadmCfg.Version,
 	}
 
 	t, err := template.New(Init).Parse(dedent.Dedent(`
         kubeadm init \
+        {{- if ne .version "" }}
+          --kubernetes-version v{{ .version }} \
+        {{- end }}
           --image-repository {{ .imageRepository }} \
           --pod-network-cidr {{ .podNetworkCidr }} \
           --service-cidr {{ .serviceCidr }} \
@@ -86,7 +90,7 @@ func ChownKubectlConfig() string {
 func SwapOff() string {
 	return dedent.Dedent(`
         swapoff -a && sysctl -w vm.swappiness=0
-        sed -i "/swap/ s/^#*/#/" /etc/fstab
+        sed -i '/swap/ s/^#*/#/' /etc/fstab
 	`)
 }
 

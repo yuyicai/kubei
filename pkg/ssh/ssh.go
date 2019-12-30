@@ -40,7 +40,7 @@ func Connect(host, port, user, password, key string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{client: client, host: host, password: password}, nil
+	return &Client{client: client, host: host, password: password, user: user}, nil
 }
 
 func ConnectByJumpServer(host, port, user, password, key string, jumpServer *Client) (*Client, error) {
@@ -68,7 +68,7 @@ func ConnectByJumpServer(host, port, user, password, key string, jumpServer *Cli
 		return nil, err
 	}
 
-	return &Client{client: ssh.NewClient(ncc, chans, reqs), host: host, password: password}, nil
+	return &Client{client: ssh.NewClient(ncc, chans, reqs), host: host, password: password, user: user}, nil
 }
 
 func makePrivateKeySignerFromFile(key string) (ssh.Signer, error) {
@@ -93,7 +93,7 @@ func (c *Client) Close() error {
 func (c *Client) Run(cmd string) error {
 	//host, _, _ := net.SplitHostPort(c.client.RemoteAddr().String())
 	if c.user != "root" {
-		cmd = fmt.Sprintf("sudo -S bash -c '\nset -e\n%s'", cmd)
+		cmd = notRootcmd(cmd)
 	}
 	klog.V(7).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
 
@@ -146,7 +146,7 @@ func (c *Client) Run(cmd string) error {
 func (c *Client) RunOut(cmd string) ([]byte, error) {
 	//host, _, _ := net.SplitHostPort(c.client.RemoteAddr().String())
 	if c.user != "root" {
-		cmd = fmt.Sprintf("sudo -S bash -c '\nset -e\n%s'", cmd)
+		cmd = notRootcmd(cmd)
 	}
 	klog.V(7).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
 
@@ -211,7 +211,7 @@ func sendSudoPassword(password, host string, in io.WriteCloser, out io.Reader) e
 		}
 		if b == byte('\n') {
 			if line != "" {
-				klog.V(6).Infof("[%s] [remote-stderr] %s", host, line)
+				klog.V(7).Infof("[%s] [remote-stderr] %s", host, line)
 			}
 			line = ""
 			continue
@@ -224,8 +224,15 @@ func sendSudoPassword(password, host string, in io.WriteCloser, out io.Reader) e
 				return err
 			}
 			line = ""
-			klog.V(5).Infof("[%s] [sudo] send the sudo password to remote host", host)
+			klog.V(6).Infof("[%s] [sudo] send the sudo password to remote host", host)
 		}
 	}
 	return nil
+}
+
+func notRootcmd(cmd string) string {
+	r := strings.NewReplacer("$", "\\$", "\"", "\\\"")
+	cmd = r.Replace(cmd)
+	cmd = fmt.Sprintf("sudo -S bash -c \"\nset -e\n%s\"", cmd)
+	return cmd
 }

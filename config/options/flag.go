@@ -5,32 +5,39 @@ import (
 )
 
 const (
-	Key                  = "key"
-	Port                 = "port"
-	Password             = "password"
-	User                 = "user"
-	KubernetesVersion    = "kubernetes-version"
-	DockerVersion        = "docker-version"
-	ControlPlaneEndpoint = "control-plane-endpoint"
-	ImageRepository      = "image-repository"
-	Masters              = "masters"
-	Workers              = "workers"
-	PodNetworkCidr       = "pod-network-cidr"
-	ServiceCidr          = "service-cidr"
-	JumpServer           = "jump-server"
+	Key                       = "key"
+	Port                      = "port"
+	Password                  = "password"
+	User                      = "user"
+	KubernetesVersion         = "kubernetes-version"
+	ContainerEngineVersion    = "container-engine-version"
+	ControlPlaneEndpoint      = "control-plane-endpoint"
+	ImageRepository           = "image-repository"
+	Masters                   = "masters"
+	Workers                   = "workers"
+	PodNetworkCidr            = "pod-network-cidr"
+	ServiceCidr               = "service-cidr"
+	JumpServer                = "jump-server"
+	RemoveContainerEngine     = "remove-container-engine"
+	RemoveKubernetesComponent = "remove-kubernetes-component"
 )
 
-func AddContainerEngineConfigFlags(flagSet *flag.FlagSet, options *ContainerEngine) {
-	flagSet.StringVar(
-		&options.Version, DockerVersion, options.Version,
-		"The Docker version.",
+func AddResetFlags(flagSet *flag.FlagSet, options *Reset) {
+	flagSet.BoolVar(
+		&options.RemoveContainerEngine, RemoveContainerEngine, options.RemoveContainerEngine,
+		"If true, remove the container engine from the nodes",
+	)
+
+	flagSet.BoolVar(
+		&options.RemoveKubeComponent, RemoveKubernetesComponent, options.RemoveKubeComponent,
+		"If true, remove the kubernetes component from the nodes",
 	)
 }
 
-func AddKubeComponentConfigFlags(flagSet *flag.FlagSet, options *KubeComponent) {
+func AddContainerEngineConfigFlags(flagSet *flag.FlagSet, options *ContainerEngine) {
 	flagSet.StringVar(
-		&options.Version, KubernetesVersion, options.Version,
-		"The Kubernetes version",
+		&options.Version, ContainerEngineVersion, options.Version,
+		"The Docker version.",
 	)
 }
 
@@ -70,8 +77,8 @@ func AddPublicUserInfoConfigFlags(flagSet *flag.FlagSet, options *PublicHostInfo
 
 func AddKubeadmConfigFlags(flagSet *flag.FlagSet, options *Kubeadm) {
 	flagSet.StringVar(
-		&options.ControlPlaneEndpoint, ControlPlaneEndpoint, "apiserver.k8s.local:6443",
-		`Specify a DNS name for the control plane.`,
+		&options.Version, KubernetesVersion, options.Version,
+		"The Kubernetes version",
 	)
 
 	flagSet.StringVar(
@@ -84,6 +91,14 @@ func AddKubeadmConfigFlags(flagSet *flag.FlagSet, options *Kubeadm) {
 	)
 
 	AddImageMetaFlags(flagSet, &options.ImageRepository)
+	AddControlPlaneEndpointFlags(flagSet, options)
+}
+
+func AddControlPlaneEndpointFlags(flagSet *flag.FlagSet, options *Kubeadm) {
+	flagSet.StringVar(
+		&options.ControlPlaneEndpoint, ControlPlaneEndpoint, "apiserver.k8s.local:6443",
+		`Specify a DNS name for the control plane.`,
+	)
 }
 
 func AddImageMetaFlags(flagSet *flag.FlagSet, imageRepository *string) {

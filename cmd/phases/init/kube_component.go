@@ -41,13 +41,14 @@ func runKubeComponent(c workflow.RunData) error {
 	}
 
 	cfg := data.Cfg()
+	version := data.KubeadmCfg().Version
 	nodes := append(cfg.ClusterNodes.Masters, cfg.ClusterNodes.Worker...)
 
 	if err := preflight.CheckSSH(nodes, &cfg.JumpServer); err != nil {
 		return err
 	}
 
-	if err := kubephases.InstallKubeComponent(nodes); err != nil {
+	if err := kubephases.InstallKubeComponent(version, nodes); err != nil {
 		return err
 	}
 

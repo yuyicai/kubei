@@ -7,7 +7,9 @@ import (
 	networkphases "github.com/yuyicai/kubei/phases/network"
 	"github.com/yuyicai/kubei/preflight"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
+	"time"
 )
 
 // NewKubeadmPhase creates a kubei workflow phase that implements handling of kubeadm.
@@ -61,12 +63,12 @@ func runKubeadm(c workflow.RunData) error {
 	}
 
 	// init master0
-	if err := kubeadmphases.InitMaster(cluster.Masters[0], kubeadmCfg); err != nil {
+	if err := kubeadmphases.InitMaster(masters[0], kubeadmCfg); err != nil {
 		return err
 	}
 
 	// add network plugin
-	if err := networkphases.Flannel(cluster.Masters[0], kubeadmCfg.Networking.PodSubnet, "quay.azk8s.cn/coreos/flannel:v0.11.0-amd64", "vxlan"); err != nil {
+	if err := networkphases.Flannel(masters[0], kubeadmCfg.Networking.PodSubnet, "quay.azk8s.cn/coreos/flannel:v0.11.0-amd64", "vxlan"); err != nil {
 		return err
 	}
 
@@ -91,6 +93,13 @@ func runKubeadm(c workflow.RunData) error {
 
 	if err := g.Wait(); err != nil {
 		return err
+	}
+
+	interval := 2 * time.Second
+	timeout := 6 * time.Minute
+	output, done := kubeadmphases.CheckNodesReady(masters[0], interval, timeout)
+	if done {
+		klog.Info("Done\n", output)
 	}
 
 	return nil
