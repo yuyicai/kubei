@@ -95,7 +95,7 @@ func (c *Client) Run(cmd string) error {
 	if c.user != "root" {
 		cmd = notRootcmd(cmd)
 	}
-	klog.V(7).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
+	klog.V(6).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
 
 	session, err := c.client.NewSession()
 	if err != nil {
@@ -148,7 +148,7 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 	if c.user != "root" {
 		cmd = notRootcmd(cmd)
 	}
-	klog.V(7).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
+	klog.V(6).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
 
 	session, err := c.client.NewSession()
 	if err != nil {

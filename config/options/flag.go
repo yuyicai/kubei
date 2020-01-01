@@ -109,6 +109,6 @@ func AddImageMetaFlags(flagSet *flag.FlagSet, imageRepository *string) {
 
 func AddJumpServerFlags(flagSet *flag.FlagSet, userInfo *map[string]string) {
 	flagSet.StringToStringVar(userInfo, JumpServer, *userInfo,
-		"Jump server user info, apply with \"--jump-server host=IP,port=22,user=your-user,password=your-password,key=key-path\"",
+		"Jump server user info, apply with --jump-server \"host=IP,port=22,user=your-user,password=your-password,key=key-path\"",
 	)
 }

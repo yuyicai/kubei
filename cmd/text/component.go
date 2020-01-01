@@ -108,12 +108,15 @@ type Yum struct {
 }
 
 func (Yum) Docker(version string) (string, error) {
-	cmd := dedent.Dedent(`
+	m := map[string]interface{}{
+		"version": version,
+	}
+	t, err := template.New("ver").Parse(dedent.Dedent(`
         yum install -y yum-utils device-mapper-persistent-data lvm2
         yum-config-manager --add-repo \
           https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
         {{- if ne .version "" }}
-        DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1)
+        DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/18.09.9/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
         yum install -y docker-ce-$DOCKER_VER docker-ce-cli-$DOCKER_VER containerd.io
         {{- else }}
         yum install -y docker-ce docker-ce-cli containerd.io
@@ -137,12 +140,25 @@ func (Yum) Docker(version string) (string, error) {
         }
         EOF
         mkdir -p /etc/systemd/system/docker.service.d
-    `)
+    `))
+	if err != nil {
+		return "", err
+	}
+
+	var cmdBuff bytes.Buffer
+	if err := t.Execute(&cmdBuff, m); err != nil {
+		return "", err
+	}
+
+	cmd := cmdBuff.String()
 	return cmd, nil
 }
 
 func (Yum) KubeComponent(version string) (string, error) {
-	cmd := dedent.Dedent(`
+	m := map[string]interface{}{
+		"version": version,
+	}
+	t, err := template.New("ver").Parse(dedent.Dedent(`
         cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo
         [kubernetes]
         name=Kubernetes
@@ -155,12 +171,22 @@ func (Yum) KubeComponent(version string) (string, error) {
         setenforce 0
         sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
         {{- if ne .version "" }}
-        KUBE_VER=$(yum list kubelet --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1)
+        KUBE_VER=$(yum list kubelet --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
         yum install -y kubelet-$KUBE_VER kubeadm-$KUBE_VER kubectl-$KUBE_VER --disableexcludes=kubernetes
         {{- else }}
         yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
         {{- end }}
-	`)
+	`))
+	if err != nil {
+		return "", err
+	}
+
+	var cmdBuff bytes.Buffer
+	if err := t.Execute(&cmdBuff, m); err != nil {
+		return "", err
+	}
+
+	cmd := cmdBuff.String()
 	return cmd, nil
 }
 
