@@ -1,0 +1,38 @@
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+builds:
+- env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  - darwin
+  - windows
+  ldflags:
+  - -s -w -X github.com/yuyicai/cmd/kubei/version.gitVersion={{.Version}}
+    -X github.com/yuyicai/kubei/cmd/version.gitCommit={{.Commit}}
+    -X github.com/yuyicai/kubei/cmd/version.buildDate={{.Date}}
+    -X github.com/yuyicai/kubei/cmd/version.gitMajor={{.Major}}
+    -X github.com/yuyicai/kubei/cmd/version.gitMinor={{.Minor}}
+    -X github.com/yuyicai/kubei/cmd/version.gitURL={{.GitURL}}
+archives:
+- replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+    - '^Merge'
+    - 'yml$'
+    - 'yaml$'
