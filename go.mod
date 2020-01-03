@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2
+	github.com/pkg/errors v0.8.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
@@ -13,6 +14,7 @@ require (
 	k8s.io/component-base v0.0.0
 	k8s.io/klog v1.0.0
 	k8s.io/kubernetes v1.16.3
+	sigs.k8s.io/yaml v1.1.0
 )
 
 replace (
