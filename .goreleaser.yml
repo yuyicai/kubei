@@ -10,7 +10,7 @@ builds:
   - darwin
   - windows
   ldflags:
-  - -s -w -X github.com/yuyicai/cmd/kubei/version.gitVersion={{.Version}}
+  - -s -w -X github.com/yuyicai/kubei/cmd/version.gitVersion={{.Version}}
     -X github.com/yuyicai/kubei/cmd/version.gitCommit={{.Commit}}
     -X github.com/yuyicai/kubei/cmd/version.buildDate={{.Date}}
     -X github.com/yuyicai/kubei/cmd/version.gitMajor={{.Major}}
