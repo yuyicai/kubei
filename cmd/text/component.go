@@ -116,7 +116,7 @@ func (Yum) Docker(version string) (string, error) {
         yum-config-manager --add-repo \
           https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
         {{- if ne .version "" }}
-        DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/18.09.9/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
+        DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
         yum install -y docker-ce-$DOCKER_VER docker-ce-cli-$DOCKER_VER containerd.io
         {{- else }}
         yum install -y docker-ce docker-ce-cli containerd.io
