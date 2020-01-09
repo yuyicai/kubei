@@ -1,12 +1,14 @@
 # kubei
 
-`kubei` （kubernetes installer） 是一个go开发的用来部署kubernetes高可用集群的命令行工具，该工具可在`Windows`、`Linux`、`Mac`中运行  
+`kubei` (kubernetes installer) 是一个go开发的用来部署kubernetes高可用集群的命令行工具，该工具可在`Windows`、`Linux`、`Mac`中运行
 
-`kubei`原理：通过ssh连接到集群服务器，进行容器引擎安装、kubernetes组件安装、调用kubeadm初始化集群  
+`kubei`原理：通过ssh连接到集群服务器，进行容器引擎安装、kubernetes组件安装、主机初始化配置、本地负载均衡器部署、调用kubeadm初始化集群master、调用kubeadm将主机加入节点
+
+所有源默认已替换成国内源，解决部署k8s无法下载容器镜像问题
 
 支持使用普通用户（sudo用户）连接集群服务器进行安装部署，支持通过堡垒机连接集群服务器  
 
-
+![k8s-ha](./docs/images/kube-ha.svg)
 
 # 版本支持
 
@@ -40,6 +42,8 @@
 
 # 快速开始
 
+*实际部署中建议使用同一发行版的Linux系统，这里使用两种系统主要是为了体现兼容性*
+
 |   主机    | 集群角色 |      系统版本      |
 | :-------: | :------: | :----------------: |
 | 10.3.0.10 |  master  | Ubuntu 18.04.3 LTS |
@@ -63,7 +67,7 @@ kubei init --key=$HOME/.ssh/k8s.key \
 
 部署过程：
 
-[![asciicast](https://asciinema.org/a/291242.svg)](https://asciinema.org/a/291242)
+![k8s-ha](./docs/images/init.gif)
 
 部署结果：
 
