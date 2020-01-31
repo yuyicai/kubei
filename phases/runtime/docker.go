@@ -1,19 +1,21 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/klog"
 )
 
 func InstallDocker(version string, nodes []*rundata.Node) error {
-	g := errgroup.Group{}
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(20)
 	for _, node := range nodes {
 		node := node
-		g.Go(func() error {
+		g.Go(func(ctx context.Context) error {
 			klog.Infof("[%s] [container-engine] Installing Docker", node.HostInfo.Host)
 			if err := installDocker(version, node); err != nil {
 				return fmt.Errorf("[%s] [container-engine] Failed to install Docker: %v", node.HostInfo.Host, err)

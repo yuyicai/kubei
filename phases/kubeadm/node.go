@@ -1,11 +1,12 @@
 package kubeadm
 
 import (
+	"context"
 	"fmt"
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"net"
@@ -21,10 +22,12 @@ func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 	for _, master := range cfg.ClusterNodes.Masters {
 		mastersIP = append(mastersIP, master.HostInfo.Host)
 	}
-	g := errgroup.Group{}
+
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(20)
 	for _, node := range cfg.ClusterNodes.Worker {
 		node := node
-		g.Go(func() error {
+		g.Go(func(ctx context.Context) error {
 
 			if err := system.SwapOff(node); err != nil {
 				return err

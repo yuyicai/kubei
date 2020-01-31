@@ -1,11 +1,12 @@
 package kubeadm
 
 import (
+	"context"
 	"fmt"
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/klog"
 	"net"
 	"strings"
@@ -62,10 +63,11 @@ func initMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) ([]byte, error)
 // JoinControlPlane join masters to ControlPlane
 func JoinControlPlane(masters []*rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-	g := errgroup.Group{}
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(20)
 	for _, node := range masters[1:] {
 		node := node
-		g.Go(func() error {
+		g.Go(func(ctx context.Context) error {
 
 			if err := system.SetHost(node, masters[0].HostInfo.Host, apiDomainName); err != nil {
 				return err

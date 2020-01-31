@@ -1,19 +1,21 @@
 package preflight
 
 import (
+	"context"
 	"fmt"
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
 	"github.com/yuyicai/kubei/config/rundata"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/klog"
 )
 
 func ResetKubeadm(nodes []*rundata.Node, apiDomainName string) error {
 
-	g := errgroup.Group{}
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(20)
 	for _, node := range nodes {
 		node := node
-		g.Go(func() error {
+		g.Go(func(ctx context.Context) error {
 			klog.V(2).Infof("[%s] [reset] Resetting node", node.HostInfo.Host)
 			if err := resetKubeadm(node, apiDomainName); err != nil {
 				return fmt.Errorf("[%s] [reset] Failed to reset node: %v", node.HostInfo.Host, err)
@@ -42,10 +44,11 @@ func resetKubeadm(node *rundata.Node, apiDomainName string) error {
 }
 
 func RemoveKubeComponente(nodes []*rundata.Node) error {
-	g := errgroup.Group{}
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(20)
 	for _, node := range nodes {
 		node := node
-		g.Go(func() error {
+		g.Go(func(ctx context.Context) error {
 			klog.V(2).Infof("[%s] [remove] remove the kubernetes component from the node", node.HostInfo.Host)
 			if err := removeKubeComponent(node); err != nil {
 				return fmt.Errorf("[%s] [remove] Failed to remove the kubernetes component: %v", node.HostInfo.Host, err)
@@ -71,10 +74,11 @@ func removeKubeComponent(node *rundata.Node) error {
 }
 
 func RemoveContainerEngine(nodes []*rundata.Node) error {
-	g := errgroup.Group{}
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(20)
 	for _, node := range nodes {
 		node := node
-		g.Go(func() error {
+		g.Go(func(ctx context.Context) error {
 			klog.V(2).Infof("[%s] [remove] Remove container engine from the node", node.HostInfo.Host)
 			if err := removeContainerEngine(node); err != nil {
 				return fmt.Errorf("[%s] [remove] Failed to remove container engine: %v", node.HostInfo.Host, err)

@@ -1,19 +1,21 @@
 package kube
 
 import (
+	"context"
 	"fmt"
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/klog"
 )
 
 func InstallKubeComponent(version string, nodes []*rundata.Node) error {
-	g := errgroup.Group{}
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(20)
 	for _, node := range nodes {
 		node := node
-		g.Go(func() error {
+		g.Go(func(ctx context.Context) error {
 			klog.Infof("[%s] [kube] Installing Kubernetes component", node.HostInfo.Host)
 			if err := installKubeComponent(version, node); err != nil {
 				return fmt.Errorf("[%s] [kube] Failed to install Kubernetes component: %v", node.HostInfo.Host, err)

@@ -1,12 +1,13 @@
 package phases
 
 import (
+	"context"
 	"errors"
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	"github.com/yuyicai/kubei/config/options"
 	kubeadmphases "github.com/yuyicai/kubei/phases/kubeadm"
 	networkphases "github.com/yuyicai/kubei/phases/network"
 	"github.com/yuyicai/kubei/preflight"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/klog"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 	"time"
@@ -72,11 +73,12 @@ func runKubeadm(c workflow.RunData) error {
 		return err
 	}
 
-	g := errgroup.Group{}
+	g := errgroup.WithCancel(context.Background())
 
+	// join to master nodes
 	if len(masters) > 1 {
 		cfg.IsHA = true
-		g.Go(func() error {
+		g.Go(func(ctx context.Context) error {
 			if err := kubeadmphases.JoinControlPlane(masters, kubeadmCfg); err != nil {
 				return err
 			}
@@ -84,7 +86,8 @@ func runKubeadm(c workflow.RunData) error {
 		})
 	}
 
-	g.Go(func() error {
+	// join to worker nodes
+	g.Go(func(ctx context.Context) error {
 		if err := kubeadmphases.JoinNode(cfg, kubeadmCfg); err != nil {
 			return err
 		}

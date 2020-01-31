@@ -3,13 +3,14 @@ module github.com/yuyicai/kubei
 go 1.13
 
 require (
+	github.com/bilibili/kratos v0.3.2
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	golang.org/x/crypto v0.0.0-20191105034135-c7e5f84aec59
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	k8s.io/apimachinery v0.0.0
 	k8s.io/component-base v0.0.0
 	k8s.io/klog v1.0.0
