@@ -1,6 +1,6 @@
 # kubei
 
-`kubei` (kubernetes installer) 是一个go开发的用来部署kubernetes高可用集群的命令行工具，该工具可在`Windows`、`Linux`、`Mac`中运行
+`kubei` (Kubernetes installer) 是一个go开发的用来部署Kubernetes高可用集群的命令行工具，该工具可在`Windows`、`Linux`、`Mac`中运行
 
 `kubei`原理：通过ssh连接到集群服务器，进行容器引擎安装、kubernetes组件安装、主机初始化配置、本地负载均衡器部署、调用kubeadm初始化集群master、调用kubeadm将主机加入节点
 
@@ -15,18 +15,18 @@
 <table>
     <thead>
         <tr>
-            <th align="center" colspan="2">应用</th>
+            <th align="center" colspan="2">应用/系统</th>
             <th align="center">版本</thalign="center">
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td align="center" colspan="2">kubernetes</td>
+            <td align="center" colspan="2">Kubernetes</td>
             <td align="center">1.16.X、1.17.X</td>
         </tr>
         <tr>
             <td align="center">容器引擎</td>
-            <td align="center">目前只支持docker</td>
+            <td align="center">目前只支持Docker</td>
             <td align="center">18.09.X、19.XX.XX</td>
         </tr>
         <tr>
@@ -34,9 +34,14 @@
             <td align="center">目前只支持flannel</td>
             <td align="center">0.11.0</td>
         </tr>
+        <tr>
+            <td align="center" colspan="2">系统</td>
+            <td align="center">Ubuntu16.04+、CentOS7.4+</td>
+        </tr>
     </tbody>
 </table>
 
+*etcd版本由kubeadm对于版本默认确定*
 
 
 
@@ -85,6 +90,16 @@ NAME        STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMA
 [更多安装示例](./docs/example.md)（指定安装版本，使用堡垒机连接等）
 
 [参数说明](./docs/flags.md)
+
+
+
+感谢：
+
+[cobra](github.com/spf13/cobra): 应用cil框架采用cobra
+
+[kubeadm](<https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/cmd/phases/workflow/doc.go>): 子命令工作流采用了kubeadm workflow模块，可以单独执行每一个子命令流程
+
+[kubespray](https://github.com/kubernetes-sigs/kubespray/blob/master/docs/ha-mode.md): 高可用配置直接使用了kubespray项目的配置
 
 
 
