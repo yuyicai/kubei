@@ -5,6 +5,7 @@ import (
 )
 
 type Kubei struct {
+	Addons          Addons
 	Reset           Reset
 	ClusterNodes    ClusterNodes
 	ContainerEngine ContainerEngine
