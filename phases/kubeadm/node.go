@@ -153,7 +153,7 @@ func iptables(node *rundata.Node) error {
 
 func CheckNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, bool) {
 	var str string
-	klog.Infof("[check] Waiting for nodes to become ready. This can take up to %v", timeout)
+	klog.Infof("[check] Waiting for all nodes to become ready. This can take up to %v", timeout)
 	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		var output []byte
 		output, _ = node.SSH.RunOut("kubectl get nodes -owide")

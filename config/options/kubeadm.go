@@ -18,15 +18,15 @@ func (c *Kubeadm) ApplyTo(data *rundata.Kubeadm) {
 		data.ImageRepository = c.ImageRepository
 	}
 
-	c.Networking.ApplyTo(&data.Networking)
+	c.Networking.ApplyTo(data)
 }
 
-func (c *Networking) ApplyTo(data *rundata.Networking) {
+func (c *Networking) ApplyTo(data *rundata.Kubeadm) {
 	if c.ServiceSubnet != "" {
-		data.ServiceSubnet = c.ServiceSubnet
+		data.Networking.ServiceSubnet = c.ServiceSubnet
 	}
 
 	if c.PodSubnet != "" {
-		data.PodSubnet = c.PodSubnet
+		data.Networking.PodSubnet = c.PodSubnet
 	}
 }

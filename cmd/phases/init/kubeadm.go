@@ -69,9 +69,14 @@ func runKubeadm(c workflow.RunData) error {
 	}
 
 	// add network plugin
-	if err := networkphases.Flannel(masters[0], kubeadmCfg.Networking.PodSubnet, "quay.azk8s.cn/coreos/flannel:v0.11.0-amd64", "vxlan"); err != nil {
+	net := cfg.Addons.Network
+	knet := kubeadmCfg.Networking
+	if err := networkphases.Network(masters[0], net, knet); err != nil {
 		return err
 	}
+	//if err := networkphases.Flannel(masters[0], kubeadmCfg.Networking.PodSubnet, "quay.azk8s.cn/coreos/flannel:v0.11.0-amd64", "vxlan"); err != nil {
+	//	return err
+	//}
 
 	g := errgroup.WithCancel(context.Background())
 
@@ -98,6 +103,7 @@ func runKubeadm(c workflow.RunData) error {
 		return err
 	}
 
+	// waiting for all nodes to become ready
 	interval := 2 * time.Second
 	timeout := 6 * time.Minute
 	output, done := kubeadmphases.CheckNodesReady(masters[0], interval, timeout)

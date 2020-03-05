@@ -2,6 +2,7 @@ package rundata
 
 import (
 	"github.com/yuyicai/kubei/pkg/ssh"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 )
 
 type Kubei struct {
@@ -55,11 +56,9 @@ type Reset struct {
 }
 
 type Kubeadm struct {
-	Version              string
-	ControlPlaneEndpoint string
-	ImageRepository      string
-	Networking           Networking
-	Token                Token
+	kubeadmapi.InitConfiguration
+	Token   Token
+	Version string
 }
 
 type Networking struct {
@@ -82,9 +81,8 @@ func NewKubei() *Kubei {
 
 func NewKubeadm() *Kubeadm {
 	return &Kubeadm{
-		ControlPlaneEndpoint: "",
-		ImageRepository:      "",
-		Networking:           Networking{},
-		Token:                Token{},
+		InitConfiguration: kubeadmapi.InitConfiguration{},
+		Token:             Token{},
+		Version:           "",
 	}
 }

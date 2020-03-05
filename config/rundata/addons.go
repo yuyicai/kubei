@@ -17,7 +17,7 @@ type Flannel struct {
 }
 
 type FlannelImage struct {
-	Image string
+	Flannel string
 }
 
 type Calico struct {
