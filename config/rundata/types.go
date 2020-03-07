@@ -1,6 +1,7 @@
 package rundata
 
 import (
+	"fmt"
 	"github.com/yuyicai/kubei/pkg/ssh"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 )
@@ -55,15 +56,23 @@ type Reset struct {
 	RemoveKubeComponent   bool
 }
 
+type Image struct {
+	ImageRepository string
+	ImageName       string
+	ImageTag        string
+}
+
+func (i *Image) GetImage() string {
+	if i.ImageRepository == "" {
+		return fmt.Sprintf("%s:%s", i.ImageName, i.ImageTag)
+	}
+	return fmt.Sprintf("%s/%s:%s", i.ImageRepository, i.ImageName, i.ImageTag)
+}
+
 type Kubeadm struct {
 	kubeadmapi.InitConfiguration
 	Token   Token
 	Version string
-}
-
-type Networking struct {
-	ServiceSubnet string
-	PodSubnet     string
 }
 
 type Token struct {

@@ -69,14 +69,11 @@ func runKubeadm(c workflow.RunData) error {
 	}
 
 	// add network plugin
-	net := cfg.Addons.Network
+	net := cfg.Addons.NetworkPlugins
 	knet := kubeadmCfg.Networking
 	if err := networkphases.Network(masters[0], net, knet); err != nil {
 		return err
 	}
-	//if err := networkphases.Flannel(masters[0], kubeadmCfg.Networking.PodSubnet, "quay.azk8s.cn/coreos/flannel:v0.11.0-amd64", "vxlan"); err != nil {
-	//	return err
-	//}
 
 	g := errgroup.WithCancel(context.Background())
 

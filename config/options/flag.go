@@ -2,6 +2,7 @@ package options
 
 import (
 	flag "github.com/spf13/pflag"
+	"github.com/yuyicai/kubei/config/constants"
 )
 
 const (
@@ -55,7 +56,7 @@ func AddKubeClusterNodesConfigFlags(flagSet *flag.FlagSet, options *ClusterNodes
 
 func AddPublicUserInfoConfigFlags(flagSet *flag.FlagSet, options *PublicHostInfo) {
 	flagSet.StringVar(
-		&options.User, User, "root",
+		&options.User, User, constants.DefaultSSHUser,
 		"SSH user of the nodes.",
 	)
 
@@ -65,7 +66,7 @@ func AddPublicUserInfoConfigFlags(flagSet *flag.FlagSet, options *PublicHostInfo
 	)
 
 	flagSet.StringVar(
-		&options.Port, Port, "22",
+		&options.Port, Port, constants.DefaultSSHPort,
 		"SSH port of the nodes.",
 	)
 
@@ -82,11 +83,11 @@ func AddKubeadmConfigFlags(flagSet *flag.FlagSet, options *Kubeadm) {
 	)
 
 	flagSet.StringVar(
-		&options.Networking.ServiceSubnet, ServiceCidr, "10.96.0.0/12",
+		&options.Networking.ServiceSubnet, ServiceCidr, constants.DefaultServiceSubnet,
 		"Use alternative range of IP address for service VIPs.",
 	)
 	flagSet.StringVar(
-		&options.Networking.PodSubnet, PodNetworkCidr, "10.244.0.0/16",
+		&options.Networking.PodSubnet, PodNetworkCidr, constants.DefaultPodNetworkCidr,
 		"Specify range of IP addresses for the pod network. If set, the control plane will automatically allocate CIDRs for every node.",
 	)
 
@@ -96,13 +97,13 @@ func AddKubeadmConfigFlags(flagSet *flag.FlagSet, options *Kubeadm) {
 
 func AddControlPlaneEndpointFlags(flagSet *flag.FlagSet, options *Kubeadm) {
 	flagSet.StringVar(
-		&options.ControlPlaneEndpoint, ControlPlaneEndpoint, "apiserver.k8s.local:6443",
+		&options.ControlPlaneEndpoint, ControlPlaneEndpoint, constants.DefaultControlPlaneEndpoint,
 		`Specify a DNS name for the control plane.`,
 	)
 }
 
 func AddImageMetaFlags(flagSet *flag.FlagSet, imageRepository *string) {
-	flagSet.StringVar(imageRepository, ImageRepository, "gcr.azk8s.cn/google_containers",
+	flagSet.StringVar(imageRepository, ImageRepository, constants.DefaultImageRepository,
 		"Choose a container registry to pull control plane images from",
 	)
 }

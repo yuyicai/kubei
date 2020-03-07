@@ -11,7 +11,7 @@ import (
 func Flannel(node *rundata.Node, f rundata.Flannel, net kubeadmapi.Networking) error {
 	klog.Infof("[%s] [network] Add the flannel network plugin", node.HostInfo.Host)
 
-	text, err := cmdtext.Flannel(net.PodSubnet, f.Image.Flannel, f.BackendType)
+	text, err := cmdtext.Flannel(net.PodSubnet, f.Image.GetImage(), f.BackendType)
 	if err != nil {
 		return fmt.Errorf("[%s] [network] Failed to add the flannel network plugin: %v", node.HostInfo.Host, err)
 	}

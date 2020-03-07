@@ -7,7 +7,7 @@ import (
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 )
 
-func Network(node *rundata.Node, net rundata.Network, knet kubeadmapi.Networking) error {
+func Network(node *rundata.Node, net rundata.NetworkPlugins, knet kubeadmapi.Networking) error {
 	switch net.Type {
 	case "none":
 		klog.Info("[network] Does not network plugin")

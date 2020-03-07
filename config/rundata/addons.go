@@ -1,10 +1,12 @@
 package rundata
 
+import "fmt"
+
 type Addons struct {
-	Network Network
+	NetworkPlugins NetworkPlugins
 }
 
-type Network struct {
+type NetworkPlugins struct {
 	// network plugins, calico, flannel, none
 	Type    string
 	Flannel Flannel
@@ -12,23 +14,17 @@ type Network struct {
 }
 
 type Flannel struct {
-	Image       FlannelImage
+	Image       Image
 	BackendType string
 }
 
-type FlannelImage struct {
-	Flannel string
-}
-
 type Calico struct {
-	Image   CalicoImage
-	Version string
+	Image Image
 }
 
-type CalicoImage struct {
-	Cni               string
-	Typha             string
-	Node              string
-	KubeControllers   string
-	Pod2daemonFlexvol string
+func (c *Calico) GetImage(image string) string {
+	if c.Image.ImageRepository == "" {
+		return fmt.Sprintf("%s:%s", c.Image.ImageName, c.Image.ImageTag)
+	}
+	return fmt.Sprintf("%s/%s:%s", c.Image.ImageRepository, image, c.Image.ImageTag)
 }

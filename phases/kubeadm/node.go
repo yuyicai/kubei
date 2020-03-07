@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
+	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -38,7 +39,7 @@ func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 			}
 
 			if cfg.IsHA {
-				if err := system.SetHost(node, "127.0.0.1", apiDomainName); err != nil {
+				if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
 					return err
 				}
 
@@ -108,10 +109,8 @@ func localSLB(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm)
 		return err
 	}
 
-	interval := 2 * time.Second
-	timeout := 6 * time.Minute
-	klog.V(2).Infof("[%s] [slb] Waiting for the kubelet to boot up the nginx proxy as static Pod. This can take up to %v", node.HostInfo.Host, timeout)
-	if err := checkHealth(node, fmt.Sprintf("https://%s/%s", kubeadmCfg.ControlPlaneEndpoint, "healthz"), interval, timeout); err != nil {
+	klog.V(2).Infof("[%s] [slb] Waiting for the kubelet to boot up the nginx proxy as static Pod. This can take up to %v", node.HostInfo.Host, constants.DefaultLocalSLBTimeout)
+	if err := checkHealth(node, fmt.Sprintf("https://%s/%s", kubeadmCfg.ControlPlaneEndpoint, "healthz"), constants.DefaultLocalSLBInterval, constants.DefaultLocalSLBTimeout); err != nil {
 		return err
 	}
 

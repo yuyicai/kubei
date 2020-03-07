@@ -97,8 +97,12 @@ func newInitData(cmd *cobra.Command, args []string, options *initOptions, out io
 
 	kubeicfg := rundata.NewKubei()
 	kubeadmcfg := rundata.NewKubeadm()
+
 	options.kubei.ApplyTo(kubeicfg)
 	options.kubeadm.ApplyTo(kubeadmcfg)
+
+	rundata.DefaulKubeiConf(kubeicfg)
+	rundata.DefaulkubeadmConf(kubeadmcfg)
 
 	initDatacfg := &initData{
 		kubei:   kubeicfg,
