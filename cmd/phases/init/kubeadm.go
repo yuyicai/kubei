@@ -89,6 +89,7 @@ func runKubeadm(c workflow.RunData) error {
 	}
 
 	// join to worker nodes
+	// and set ha if masters > 1
 	g.Go(func(ctx context.Context) error {
 		if err := kubeadmphases.JoinNode(cfg, kubeadmCfg); err != nil {
 			return err

@@ -18,12 +18,6 @@ import (
 //JoinNode join nodes
 func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 
-	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-	var mastersIP []string
-	for _, master := range cfg.ClusterNodes.Masters {
-		mastersIP = append(mastersIP, master.HostInfo.Host)
-	}
-
 	g := errgroup.WithCancel(context.Background())
 	g.GOMAXPROCS(20)
 	for _, node := range cfg.ClusterNodes.Worker {
@@ -38,23 +32,8 @@ func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 				return err
 			}
 
-			if cfg.IsHA {
-				if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
-					return err
-				}
-
-				klog.Infof("[%s] [slb] Setting up the local SLB", node.HostInfo.Host)
-				if err := localSLB(mastersIP, node, kubeadmCfg); err != nil {
-					return fmt.Errorf("[%s] Failed to set up the local SLB: %v", node.HostInfo.Host, err)
-				}
-
-				klog.Infof("[%s] [slb] Successfully set up the local SLB", node.HostInfo.Host)
-			} else {
-				// set /etc/hosts
-				if err := system.SetHost(node, mastersIP[0], apiDomainName); err != nil {
-					return err
-				}
-
+			if err := ha(node, cfg.ClusterNodes.GetAllMastersHost(), &cfg.Addons.HA, kubeadmCfg); err != nil {
+				return err
 			}
 
 			// join worker node
@@ -75,18 +54,39 @@ func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 	return nil
 }
 
-func joinNode(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
-	text, err := cmdtext.Kubeadm(cmdtext.JoinNode, node.Name, kubeadmCfg)
-	if err != nil {
-		return err
+func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubeadm) error {
+	apiDomainName, _, _ := net.SplitHostPort(kcfg.ControlPlaneEndpoint)
+
+	switch h.Type {
+	case constants.HATypeNone:
+		if err := system.SetHost(node, masters[0], apiDomainName); err != nil {
+			return err
+		}
+	case constants.HATypeLocalSLB:
+		if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
+			return err
+		}
+
+		klog.Infof("[%s] [slb] Setting up the local SLB", node.HostInfo.Host)
+		if err := localSLB(masters, node, &h.LocalSLB, kcfg); err != nil {
+			return fmt.Errorf("[%s] Failed to set up the local SLB: %v", node.HostInfo.Host, err)
+		}
+		klog.Infof("[%s] [slb] Successfully set up the local SLB", node.HostInfo.Host)
+
 	}
-	if err := node.SSH.Run(text); err != nil {
-		return err
+
+	return nil
+}
+
+func localSLB(masters []string, node *rundata.Node, l *rundata.LocalSLB, kcfg *rundata.Kubeadm) error {
+	switch l.Type {
+	case constants.LocalSLBTypeNginx:
+		nginx(masters, node, kcfg)
 	}
 	return nil
 }
 
-func localSLB(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
+func nginx(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	text, err := cmdtext.NginxConf(masters, "6443")
 	if err != nil {
 		return err
@@ -146,6 +146,17 @@ func iptables(node *rundata.Node) error {
 	klog.V(2).Infof("[%s] [iptables] set up iptables", node.HostInfo.Host)
 	if err := node.SSH.Run(cmdtext.Iptables()); err != nil {
 		return fmt.Errorf("[%s] [iptables] Failed set up iptables: %v", node.HostInfo.Host, err)
+	}
+	return nil
+}
+
+func joinNode(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
+	text, err := cmdtext.Kubeadm(cmdtext.JoinNode, node.Name, kubeadmCfg)
+	if err != nil {
+		return err
+	}
+	if err := node.SSH.Run(text); err != nil {
+		return err
 	}
 	return nil
 }

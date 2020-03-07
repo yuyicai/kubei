@@ -20,6 +20,14 @@ type ClusterNodes struct {
 	Worker  []*Node
 }
 
+func (c *ClusterNodes) GetAllMastersHost() []string {
+	var hosts []string
+	for _, master := range c.Masters {
+		hosts = append(hosts, master.HostInfo.Host)
+	}
+	return hosts
+}
+
 const (
 	Apt = 1 << iota
 	Yum

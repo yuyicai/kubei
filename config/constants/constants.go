@@ -27,4 +27,15 @@ const (
 
 	DefaultLocalSLBInterval = 2 * time.Second
 	DefaultLocalSLBTimeout  = 6 * time.Minute
+
+	HATypeNone = 1 << iota
+	HATypeLocalSLB
+	HATypeExternalSLB
+
+	LocalSLBTypeNginx = 1 << iota
+	LocalSLBTypeHAproxy
+
+	InstallationTypeOffline = 1 << iota
+	InstallationTypeApt
+	InstallationTypeYum
 )
