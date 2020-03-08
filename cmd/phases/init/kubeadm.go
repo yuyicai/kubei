@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/options"
 	kubeadmphases "github.com/yuyicai/kubei/phases/kubeadm"
 	networkphases "github.com/yuyicai/kubei/phases/network"
@@ -79,7 +80,11 @@ func runKubeadm(c workflow.RunData) error {
 
 	// join to master nodes
 	if len(masters) > 1 {
-		cfg.IsHA = true
+		h := &cfg.Addons.HA
+		if h.Type == constants.HATypeNone {
+			h.Type = constants.HATypeLocalSLB
+		}
+
 		g.Go(func(ctx context.Context) error {
 			if err := kubeadmphases.JoinControlPlane(masters, kubeadmCfg); err != nil {
 				return err
@@ -89,7 +94,7 @@ func runKubeadm(c workflow.RunData) error {
 	}
 
 	// join to worker nodes
-	// and set ha if masters > 1
+	// and set ha
 	g.Go(func(ctx context.Context) error {
 		if err := kubeadmphases.JoinNode(cfg, kubeadmCfg); err != nil {
 			return err

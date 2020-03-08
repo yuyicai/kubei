@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
+	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
 	"k8s.io/klog"
@@ -15,7 +16,7 @@ import (
 // InitMaster init master0
 func InitMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-	if err := system.SetHost(node, "127.0.0.1", apiDomainName); err != nil {
+	if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
 		return err
 	}
 
@@ -91,7 +92,7 @@ func JoinControlPlane(masters []*rundata.Node, kubeadmCfg *rundata.Kubeadm) erro
 				return err
 			}
 
-			if err := system.SetHost(node, "127.0.0.1", apiDomainName); err != nil {
+			if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
 				return err
 			}
 

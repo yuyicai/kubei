@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -72,6 +73,8 @@ func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubea
 			return fmt.Errorf("[%s] Failed to set up the local SLB: %v", node.HostInfo.Host, err)
 		}
 		klog.Infof("[%s] [slb] Successfully set up the local SLB", node.HostInfo.Host)
+	case constants.HATypeExternalSLB:
+		//TODO
 
 	}
 
@@ -81,13 +84,15 @@ func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubea
 func localSLB(masters []string, node *rundata.Node, l *rundata.LocalSLB, kcfg *rundata.Kubeadm) error {
 	switch l.Type {
 	case constants.LocalSLBTypeNginx:
-		nginx(masters, node, kcfg)
+		nginx(node, &l.Nginx, masters, kcfg)
+	case constants.LocalSLBTypeHAproxy:
+		//TODO
 	}
 	return nil
 }
 
-func nginx(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
-	text, err := cmdtext.NginxConf(masters, "6443")
+func nginx(node *rundata.Node, n *rundata.Nginx, masters []string, kcfg *rundata.Kubeadm) error {
+	text, err := cmdtext.NginxConf(masters, n.Port, strconv.FormatInt(int64(kcfg.LocalAPIEndpoint.BindPort), 10))
 	if err != nil {
 		return err
 	}
@@ -95,11 +100,11 @@ func nginx(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm) er
 		return err
 	}
 
-	if err := node.SSH.Run(cmdtext.NginxManifest("nginx:1.17")); err != nil {
+	if err := node.SSH.Run(cmdtext.NginxManifest(n.Image.GetImage())); err != nil {
 		return err
 	}
 
-	if err := node.SSH.Run(cmdtext.KubeletUnitFile(fmt.Sprintf("%s/%s", kubeadmCfg.ImageRepository, "pause:3.1"))); err != nil {
+	if err := node.SSH.Run(cmdtext.KubeletUnitFile(fmt.Sprintf("%s/%s", kcfg.ImageRepository, "pause:3.1"))); err != nil {
 		return err
 	}
 
@@ -110,7 +115,7 @@ func nginx(masters []string, node *rundata.Node, kubeadmCfg *rundata.Kubeadm) er
 	}
 
 	klog.V(2).Infof("[%s] [slb] Waiting for the kubelet to boot up the nginx proxy as static Pod. This can take up to %v", node.HostInfo.Host, constants.DefaultLocalSLBTimeout)
-	if err := checkHealth(node, fmt.Sprintf("https://%s/%s", kubeadmCfg.ControlPlaneEndpoint, "healthz"), constants.DefaultLocalSLBInterval, constants.DefaultLocalSLBTimeout); err != nil {
+	if err := checkHealth(node, fmt.Sprintf("https://%s/%s", kcfg.ControlPlaneEndpoint, "healthz"), constants.DefaultLocalSLBInterval, constants.DefaultLocalSLBTimeout); err != nil {
 		return err
 	}
 

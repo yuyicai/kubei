@@ -10,8 +10,9 @@ const (
 	DefaultPodNetworkCidr       = "10.244.0.0/16"
 	DefaultControlPlaneEndpoint = "apiserver.k8s.local:6443"
 	DefaultImageRepository      = "gcr.azk8s.cn/google_containers"
-	DefaultAPIBindPort          = "6443"
-	DefaulNetworkPlugin         = "flannel"
+	DefaultAPIBindPort          = 6443
+
+	DefaulNetworkPlugin = "flannel"
 
 	DefaultFlannelImageRepository = "quay.azk8s.cn/coreos"
 	DefaultFlannelImageName       = "flannel"
@@ -28,13 +29,21 @@ const (
 	DefaultLocalSLBInterval = 2 * time.Second
 	DefaultLocalSLBTimeout  = 6 * time.Minute
 
+	IsNotSet = 0
+)
+
+const (
 	HATypeNone = 1 << iota
 	HATypeLocalSLB
 	HATypeExternalSLB
+)
 
+const (
 	LocalSLBTypeNginx = 1 << iota
 	LocalSLBTypeHAproxy
+)
 
+const (
 	InstallationTypeOffline = 1 << iota
 	InstallationTypeApt
 	InstallationTypeYum

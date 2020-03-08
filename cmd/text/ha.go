@@ -27,10 +27,11 @@ func RemoveKubeletUnitFile() string {
 	return cmdText
 }
 
-func NginxConf(masters []string, port string) (string, error) {
+func NginxConf(masters []string, nginxPort, masterPort string) (string, error) {
 	m := map[string]interface{}{
-		"masters": masters,
-		"port":    port,
+		"masters":    masters,
+		"nginxPort":  nginxPort,
+		"masterPort": masterPort,
 	}
 
 	cmdText := dedent.Dedent(`
@@ -52,12 +53,12 @@ func NginxConf(masters []string, port string) (string, error) {
           upstream kube_apiserver {
             least_conn;
         {{range $master := .masters}}
-            server {{ $master}}:6443;
+            server {{ $master }}:{{ .masterPort }};
         {{- end}}
           }
         
           server {
-            listen        127.0.0.1:{{ .port }};
+            listen        127.0.0.1:{{ .nginxPort }};
             proxy_pass    kube_apiserver;
             proxy_timeout 10m;
             proxy_connect_timeout 1s;

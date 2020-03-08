@@ -3,26 +3,36 @@ package rundata
 import "github.com/yuyicai/kubei/config/constants"
 
 func DefaulkubeadmConf(k *Kubeadm) {
-
+	if k.LocalAPIEndpoint.BindPort==constants.IsNotSet{
+		k.LocalAPIEndpoint.BindPort=constants.DefaultAPIBindPort
+	}
 }
 
 func DefaulKubeiConf(k *Kubei) {
-	DefaulAddonsConf(&k.Addons)
+	defaulAddonsConf(&k.Addons)
 }
 
-func DefaulAddonsConf(a *Addons) {
-	DefaulNetworkPluginsConf(&a.NetworkPlugins)
+func defaulAddonsConf(a *Addons) {
+	defaulNetworkPluginsConf(&a.NetworkPlugins)
 }
 
-func DefaulNetworkPluginsConf(n *NetworkPlugins) {
+func defaulHAConf(h *HA) {
+	if h.Type == constants.IsNotSet {
+		h.Type = constants.HATypeNone
+	}
+
+	defaulLocalSLBConf(&h.LocalSLB)
+}
+
+func defaulNetworkPluginsConf(n *NetworkPlugins) {
 	if n.Type == "" {
 		n.Type = constants.DefaulNetworkPlugin
 	}
 
-	DefaulFlannelConf(&n.Flannel)
+	defaulFlannelConf(&n.Flannel)
 }
 
-func DefaulFlannelConf(f *Flannel) {
+func defaulFlannelConf(f *Flannel) {
 	if f.BackendType == "" {
 		f.BackendType = constants.DefaultFlannelBackendType
 	}
@@ -37,5 +47,31 @@ func DefaulFlannelConf(f *Flannel) {
 
 	if f.Image.ImageTag == "" {
 		f.Image.ImageTag = constants.DefaultFlannelVersion
+	}
+}
+
+func defaulLocalSLBConf(l *LocalSLB) {
+	if l.Type == constants.IsNotSet {
+		l.Type = constants.LocalSLBTypeNginx
+	}
+
+	defaulNginxConf(&l.Nginx)
+}
+
+func defaulNginxConf(n *Nginx) {
+	if n.Port == "" {
+		n.Port = constants.DefaultNginxPort
+	}
+
+	if n.Image.ImageRepository == "" {
+		n.Image.ImageName = constants.DefaultNginxImageRepository
+	}
+
+	if n.Image.ImageName == "" {
+		n.Image.ImageName = constants.DefaultNginxImageName
+	}
+
+	if n.Image.ImageTag == "" {
+		n.Image.ImageTag = constants.DefaultNginxVersion
 	}
 }
