@@ -25,15 +25,17 @@ func (Apt) Docker(version string) (string, error) {
 		"version": version,
 	}
 	t, err := template.New("ver").Parse(dedent.Dedent(`
-        apt update && apt -y install apt-transport-https ca-certificates curl software-properties-common
-        curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | apt-key add -
-        add-apt-repository "deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
-        apt update
+        apt-get update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get -y install apt-transport-https ca-certificates curl
+        curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | apt-key add -qq - >/dev/null
+        cat <<EOF | tee /etc/apt/sources.list.d/docker.list
+        deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable
+        EOF
+        apt-get update -qq >/dev/null
         {{- if ne .version "" }}
         DOCKER_VER=$(apt-cache madison docker-ce | awk '/{{ .version }}/ {print$3}' | head -1)
-        apt -y install docker-ce=$DOCKER_VER docker-ce-cli=$DOCKER_VER containerd.io
+        apt-get -y install -qq docker-ce=$DOCKER_VER docker-ce-cli=$DOCKER_VER containerd.io
         {{- else }}
-        apt -y install docker-ce docker-ce-cli containerd.io
+        apt-get -y install -qq docker-ce docker-ce-cli containerd.io
         {{- end }}
         cat <<EOF | tee /etc/docker/daemon.json
         {
@@ -69,17 +71,17 @@ func (Apt) KubeComponent(version string) (string, error) {
 		"version": version,
 	}
 	t, err := template.New("ver").Parse(dedent.Dedent(`
-        apt update && apt install -y apt-transport-https curl
+        apt-get update -qq && apt-get install -qq -y apt-transport-https curl
         curl -s https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add -
         cat <<EOF | tee /etc/apt/sources.list.d/kubernetes.list
         deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
         EOF
-        apt update
+        apt-get update -qq
         {{- if ne .version "" }}
         KUBE_VER=$(apt-cache madison kubelet | awk '/{{ .version }}/ {print$3}' | head -1)
-        apt install -y --allow-change-held-packages kubelet=$KUBE_VER kubeadm=$KUBE_VER kubectl=$KUBE_VER
+        apt-get install -qq -y --allow-change-held-packages kubelet=$KUBE_VER kubeadm=$KUBE_VER kubectl=$KUBE_VER
         {{- else }}
-        apt install -y --allow-change-held-packages kubelet kubeadm kubectl
+        apt-get install -qq -y --allow-change-held-packages kubelet kubeadm kubectl
         {{- end }}
         apt-mark hold kubelet kubeadm kubectl
 	`))
@@ -97,11 +99,11 @@ func (Apt) KubeComponent(version string) (string, error) {
 }
 
 func (Apt) RemoveDocker() string {
-	return "apt remove -y docker-ce docker-ce-cli containerd.io || true"
+	return "apt-get remove -y docker-ce docker-ce-cli containerd.io || true"
 }
 
 func (Apt) RemoveKubeComponent() string {
-	return "apt remove -y --allow-change-held-packages kubelet kubeadm kubectl || true"
+	return "apt-get remove -y --allow-change-held-packages kubelet kubeadm kubectl || true"
 }
 
 type Yum struct {
@@ -112,14 +114,14 @@ func (Yum) Docker(version string) (string, error) {
 		"version": version,
 	}
 	t, err := template.New("ver").Parse(dedent.Dedent(`
-        yum install -y yum-utils device-mapper-persistent-data lvm2
+        yum install -y -q yum-utils
         yum-config-manager --add-repo \
           https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
         {{- if ne .version "" }}
         DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
-        yum install -y docker-ce-$DOCKER_VER docker-ce-cli-$DOCKER_VER containerd.io
+        yum install -y -q docker-ce-$DOCKER_VER docker-ce-cli-$DOCKER_VER containerd.io
         {{- else }}
-        yum install -y docker-ce docker-ce-cli containerd.io
+        yum install -y -q docker-ce docker-ce-cli containerd.io
         {{- end }}
         mkdir -p /etc/docker
         cat <<EOF | tee /etc/docker/daemon.json

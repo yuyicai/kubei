@@ -12,7 +12,6 @@ type Kubei struct {
 	ClusterNodes    ClusterNodes
 	ContainerEngine ContainerEngine
 	JumpServer      JumpServer
-	IsHA            bool
 }
 
 type ClusterNodes struct {
@@ -53,10 +52,6 @@ type HostInfo struct {
 	Password string
 	Port     string
 	Key      string
-}
-
-type ContainerEngine struct {
-	Version string
 }
 
 type Reset struct {
