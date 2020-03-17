@@ -11,9 +11,9 @@ import (
 // NewContainerEnginePhase creates a kubei workflow phase that implements handling of runtime.
 func NewContainerEnginePhase() workflow.Phase {
 	phase := workflow.Phase{
-		Name:         "runtime",
-		Short:        "install container runtime",
-		Long:         "install container runtime",
+		Name:         "container-engine",
+		Short:        "install container engine",
+		Long:         "install container engine",
 		InheritFlags: getContainerEnginePhaseFlags(),
 		Run:          runContainerEngine,
 	}

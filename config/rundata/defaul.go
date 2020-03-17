@@ -2,37 +2,39 @@ package rundata
 
 import "github.com/yuyicai/kubei/config/constants"
 
-func DefaulkubeadmConf(k *Kubeadm) {
-	if k.LocalAPIEndpoint.BindPort==constants.IsNotSet{
-		k.LocalAPIEndpoint.BindPort=constants.DefaultAPIBindPort
+func DefaultkubeadmConf(k *Kubeadm) {
+	if k.LocalAPIEndpoint.BindPort == constants.IsNotSet {
+		k.LocalAPIEndpoint.BindPort = constants.DefaultAPIBindPort
 	}
 }
 
-func DefaulKubeiConf(k *Kubei) {
-	defaulAddonsConf(&k.Addons)
+func DefaultKubeiConf(k *Kubei) {
+	defaultAddonsConf(&k.Addons)
+	defaultContainerEngine(&k.ContainerEngine)
 }
 
-func defaulAddonsConf(a *Addons) {
-	defaulNetworkPluginsConf(&a.NetworkPlugins)
+func defaultAddonsConf(a *Addons) {
+	defaultNetworkPluginsConf(&a.NetworkPlugins)
+	defaultHAConf(&a.HA)
 }
 
-func defaulHAConf(h *HA) {
+func defaultHAConf(h *HA) {
 	if h.Type == constants.IsNotSet {
 		h.Type = constants.HATypeNone
 	}
 
-	defaulLocalSLBConf(&h.LocalSLB)
+	defaultLocalSLBConf(&h.LocalSLB)
 }
 
-func defaulNetworkPluginsConf(n *NetworkPlugins) {
+func defaultNetworkPluginsConf(n *NetworkPlugins) {
 	if n.Type == "" {
 		n.Type = constants.DefaulNetworkPlugin
 	}
 
-	defaulFlannelConf(&n.Flannel)
+	defaultFlannelConf(&n.Flannel)
 }
 
-func defaulFlannelConf(f *Flannel) {
+func defaultFlannelConf(f *Flannel) {
 	if f.BackendType == "" {
 		f.BackendType = constants.DefaultFlannelBackendType
 	}
@@ -50,15 +52,15 @@ func defaulFlannelConf(f *Flannel) {
 	}
 }
 
-func defaulLocalSLBConf(l *LocalSLB) {
+func defaultLocalSLBConf(l *LocalSLB) {
 	if l.Type == constants.IsNotSet {
 		l.Type = constants.LocalSLBTypeNginx
 	}
 
-	defaulNginxConf(&l.Nginx)
+	defaultNginxConf(&l.Nginx)
 }
 
-func defaulNginxConf(n *Nginx) {
+func defaultNginxConf(n *Nginx) {
 	if n.Port == "" {
 		n.Port = constants.DefaultNginxPort
 	}
@@ -73,5 +75,31 @@ func defaulNginxConf(n *Nginx) {
 
 	if n.Image.ImageTag == "" {
 		n.Image.ImageTag = constants.DefaultNginxVersion
+	}
+}
+
+func defaultContainerEngine(c *ContainerEngine) {
+	if c.Type == constants.IsNotSet {
+		c.Type = constants.ContainerEngineTypeDocker
+	}
+
+	defaultDocker(&c.Docker)
+}
+
+func defaultDocker(d *Docker) {
+	if d.CGroupDriver == "" {
+		d.CGroupDriver = constants.DefaultCGroupDriver
+	}
+
+	if d.LogDriver == "" {
+		d.LogDriver = constants.DefaultLogDriver
+	}
+
+	if d.LogOptsMaxSize == "" {
+		d.LogOptsMaxSize = constants.DefaultLogOptsMaxSize
+	}
+
+	if d.StorageDriver == "" {
+		d.StorageDriver = constants.DockerDefaultStorageDriver
 	}
 }
