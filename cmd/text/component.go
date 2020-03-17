@@ -66,6 +66,37 @@ func (Apt) Docker(version string) (string, error) {
 	return cmd, nil
 }
 
+func (Apt) Containerd(version string) (string, error) {
+	m := map[string]interface{}{
+		"version": version,
+	}
+	t, err := template.New("ver").Parse(dedent.Dedent(`
+        apt-get update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get -y install apt-transport-https ca-certificates curl
+        curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | apt-key add -qq - >/dev/null
+        cat <<EOF | tee /etc/apt/sources.list.d/docker.list
+        deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable
+        EOF
+        apt-get update -qq >/dev/null
+        {{- if ne .version "" }}
+        CONTAINERD_VER=$(apt-cache madison containerd.io | awk '/{{ .version }}/ {print$3}' | head -1)
+        apt-get -y install -qq containerd.io=$CONTAINERD_VER
+        {{- else }}
+        apt-get -y install -qq containerd.io
+        {{- end }}
+	`))
+	if err != nil {
+		return "", err
+	}
+
+	var cmdBuff bytes.Buffer
+	if err := t.Execute(&cmdBuff, m); err != nil {
+		return "", err
+	}
+
+	cmd := cmdBuff.String()
+	return cmd, nil
+}
+
 func (Apt) KubeComponent(version string) (string, error) {
 	m := map[string]interface{}{
 		"version": version,
@@ -142,6 +173,34 @@ func (Yum) Docker(version string) (string, error) {
         }
         EOF
         mkdir -p /etc/systemd/system/docker.service.d
+    `))
+	if err != nil {
+		return "", err
+	}
+
+	var cmdBuff bytes.Buffer
+	if err := t.Execute(&cmdBuff, m); err != nil {
+		return "", err
+	}
+
+	cmd := cmdBuff.String()
+	return cmd, nil
+}
+
+func (Yum) Containerd(version string) (string, error) {
+	m := map[string]interface{}{
+		"version": version,
+	}
+	t, err := template.New("ver").Parse(dedent.Dedent(`
+        yum install -y -q yum-utils
+        yum-config-manager --add-repo \
+          https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+        {{- if ne .version "" }}
+        CONTAINERD_VER=$(yum list docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
+        yum install -y -q containerd.io=CONTAINERD_VER
+        {{- else }}
+        yum install -y -q containerd.io
+        {{- end }}
     `))
 	if err != nil {
 		return "", err
