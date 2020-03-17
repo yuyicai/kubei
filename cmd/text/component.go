@@ -3,7 +3,7 @@ package text
 import (
 	"bytes"
 	"github.com/lithammer/dedent"
-	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/config/constants"
 	"text/template"
 )
 
@@ -200,9 +200,9 @@ func (Yum) RemoveKubeComponent() string {
 
 func NewContainerEngineText(installationType int) DocekrText {
 	switch installationType {
-	case rundata.Apt:
+	case constants.InstallationTypeApt:
 		return &Apt{}
-	case rundata.Yum:
+	case constants.InstallationTypeYum:
 		return &Yum{}
 	}
 	return nil
@@ -210,9 +210,9 @@ func NewContainerEngineText(installationType int) DocekrText {
 
 func NewKubeText(installationType int) KubeText {
 	switch installationType {
-	case rundata.Apt:
+	case constants.InstallationTypeApt:
 		return &Apt{}
-	case rundata.Yum:
+	case constants.InstallationTypeYum:
 		return &Yum{}
 	}
 	return nil

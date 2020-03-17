@@ -2,6 +2,7 @@ package preflight
 
 import (
 	"fmt"
+	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/pkg/ssh"
 	"golang.org/x/sync/errgroup"
@@ -68,10 +69,10 @@ func checkSSH(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 		switch true {
 		case strings.Contains(string(output), "Ubuntu"):
 			klog.V(5).Infof("[%s] [preflight] The package management is \"apt\"", userInfo.Host)
-			node.InstallationType = rundata.Apt
+			node.InstallationType = constants.InstallationTypeApt
 		case strings.Contains(string(output), "Red"):
 			klog.V(5).Infof("[%s] [preflight] The package management is \"yum\"", userInfo.Host)
-			node.InstallationType = rundata.Yum
+			node.InstallationType = constants.InstallationTypeYum
 		default:
 			return fmt.Errorf("[%s] [preflight] Unsupported this system", userInfo.Host)
 		}

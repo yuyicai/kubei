@@ -28,12 +28,6 @@ func (c *ClusterNodes) GetAllMastersHost() []string {
 	return hosts
 }
 
-const (
-	Apt = 1 << iota
-	Yum
-	Offline
-)
-
 type Node struct {
 	SSH              *ssh.Client
 	HostInfo         HostInfo
