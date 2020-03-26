@@ -92,9 +92,8 @@ func (c *Client) Close() error {
 
 func (c *Client) Run(cmd string) error {
 	//host, _, _ := net.SplitHostPort(c.client.RemoteAddr().String())
-	if c.user != "root" {
-		cmd = notRootcmd(cmd)
-	}
+	cmd = c.cmdPrefix(cmd)
+
 	klog.V(6).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
 
 	session, err := c.client.NewSession()
@@ -145,9 +144,8 @@ func (c *Client) Run(cmd string) error {
 
 func (c *Client) RunOut(cmd string) ([]byte, error) {
 	//host, _, _ := net.SplitHostPort(c.client.RemoteAddr().String())
-	if c.user != "root" {
-		cmd = notRootcmd(cmd)
-	}
+	cmd = c.cmdPrefix(cmd)
+
 	klog.V(6).Infof("[%s] [commands] Execute commands: \n%s", c.host, cmd)
 
 	session, err := c.client.NewSession()
@@ -230,9 +228,15 @@ func sendSudoPassword(password, host string, in io.WriteCloser, out io.Reader) e
 	return nil
 }
 
-func notRootcmd(cmd string) string {
+func (c *Client) cmdPrefix(cmd string) string {
 	r := strings.NewReplacer("$", "\\$", "\"", "\\\"")
 	cmd = r.Replace(cmd)
-	cmd = fmt.Sprintf("sudo -S bash -c \"\nset -e\n%s\"", cmd)
+
+	if c.user == "root" {
+		cmd = fmt.Sprintf("bash -c \"\nset -e\n%s\"", cmd)
+	} else {
+		cmd = fmt.Sprintf("sudo -S bash -c \"\nset -e\n%s\"", cmd)
+	}
+
 	return cmd
 }
