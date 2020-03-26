@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/lithammer/dedent"
 	"github.com/yuyicai/kubei/config/constants"
+	"github.com/yuyicai/kubei/config/rundata"
 	"text/template"
 )
 
