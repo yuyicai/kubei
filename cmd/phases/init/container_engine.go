@@ -41,14 +41,14 @@ func runContainerEngine(c workflow.RunData) error {
 	}
 
 	cfg := data.Cfg()
-	version := data.ContainerEngine().Version
+	containerEngine := data.ContainerEngine()
 	nodes := append(cfg.ClusterNodes.Masters, cfg.ClusterNodes.Worker...)
 
 	if err := preflight.CheckSSH(nodes, &cfg.JumpServer); err != nil {
 		return err
 	}
 
-	if err := runtimephases.InstallDocker(version, nodes); err != nil {
+	if err := runtimephases.InstallContainerEngine(nodes, *containerEngine); err != nil {
 		return err
 	}
 
