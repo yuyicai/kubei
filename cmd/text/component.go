@@ -8,7 +8,7 @@ import (
 )
 
 type DocekrText interface {
-	Docker(string) (string, error)
+	Docker(rundata.Docker) (string, error)
 	RemoveDocker() string
 }
 
@@ -20,9 +20,13 @@ type KubeText interface {
 type Apt struct {
 }
 
-func (Apt) Docker(version string) (string, error) {
+func (Apt) Docker(d rundata.Docker) (string, error) {
 	m := map[string]interface{}{
-		"version": version,
+		"version":           d.Version,
+		"cgroup-driver":     d.CGroupDriver,
+		"log-driver":        d.LogDriver,
+		"log-opts-max-size": d.LogOptsMaxSize,
+		"storage-driver":    d.StorageDriver,
 	}
 	t, err := template.New("ver").Parse(dedent.Dedent(`
         apt-get update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get -y install apt-transport-https ca-certificates curl
@@ -43,12 +47,14 @@ func (Apt) Docker(version string) (string, error) {
               "https://dockerhub.azk8s.cn",
               "https://hub-mirror.c.163.com"
           ],
+        {{- if eq .cgroup-driver "systemd" }}
           "exec-opts": ["native.cgroupdriver=systemd"],
-          "log-driver": "json-file",
+        {{- end }}
+          "log-driver": "{{ .log-driver }}",
           "log-opts": {
-            "max-size": "500m"
+            "max-size": "{{ .log-opts-max-size }}"
           },
-          "storage-driver": "overlay2"
+          "storage-driver": "{{ .storage-driver }}"
         }
         EOF
         mkdir -p /etc/systemd/system/docker.service.d
@@ -140,9 +146,13 @@ func (Apt) RemoveKubeComponent() string {
 type Yum struct {
 }
 
-func (Yum) Docker(version string) (string, error) {
+func (Yum) Docker(d rundata.Docker) (string, error) {
 	m := map[string]interface{}{
-		"version": version,
+		"version":           d.Version,
+		"cgroup-driver":     d.CGroupDriver,
+		"log-driver":        d.LogDriver,
+		"log-opts-max-size": d.LogOptsMaxSize,
+		"storage-driver":    d.StorageDriver,
 	}
 	t, err := template.New("ver").Parse(dedent.Dedent(`
         yum install -y -q yum-utils
@@ -161,15 +171,19 @@ func (Yum) Docker(version string) (string, error) {
               "https://dockerhub.azk8s.cn",
               "https://hub-mirror.c.163.com"
           ],
+        {{- if eq .cgroup-driver "systemd" }}
           "exec-opts": ["native.cgroupdriver=systemd"],
-          "log-driver": "json-file",
+        {{- end }}
+          "log-driver": "{{ .log-driver }}",
           "log-opts": {
-            "max-size": "100m"
+            "max-size": "{{ .log-opts-max-size }}"
           },
+        {{- if eq .storage-driver "overlay2" }}
           "storage-driver": "overlay2",
           "storage-opts": [
             "overlay2.override_kernel_check=true"
           ]
+        {{- end }}
         }
         EOF
         mkdir -p /etc/systemd/system/docker.service.d

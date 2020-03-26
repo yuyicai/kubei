@@ -11,9 +11,9 @@ import (
 // NewContainerEnginePhase creates a kubei workflow phase that implements handling of runtime.
 func NewContainerEnginePhase() workflow.Phase {
 	phase := workflow.Phase{
-		Name:         "runtime",
-		Short:        "install container runtime",
-		Long:         "install container runtime",
+		Name:         "container-engine",
+		Short:        "install container engine",
+		Long:         "install container engine",
 		InheritFlags: getContainerEnginePhaseFlags(),
 		Run:          runContainerEngine,
 	}
@@ -41,14 +41,14 @@ func runContainerEngine(c workflow.RunData) error {
 	}
 
 	cfg := data.Cfg()
-	version := data.ContainerEngine().Version
+	containerEngine := data.ContainerEngine()
 	nodes := append(cfg.ClusterNodes.Masters, cfg.ClusterNodes.Worker...)
 
 	if err := preflight.CheckSSH(nodes, &cfg.JumpServer); err != nil {
 		return err
 	}
 
-	if err := runtimephases.InstallDocker(version, nodes); err != nil {
+	if err := runtimephases.InstallContainerEngine(nodes, *containerEngine); err != nil {
 		return err
 	}
 

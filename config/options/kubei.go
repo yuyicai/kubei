@@ -36,7 +36,7 @@ func (c *ClusterNodes) ApplyTo(data *rundata.ClusterNodes) {
 
 func (c *ContainerEngine) ApplyTo(data *rundata.ContainerEngine) {
 	if c.Version != "" {
-		data.Version = strings.Replace(c.Version, "v", "", -1)
+		data.Docker.Version = strings.Replace(c.Version, "v", "", -1)
 	}
 }
 
