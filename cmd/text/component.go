@@ -23,42 +23,42 @@ type Apt struct {
 
 func (Apt) Docker(d rundata.Docker) (string, error) {
 	m := map[string]interface{}{
-		"version":           d.Version,
-		"cgroup-driver":     d.CGroupDriver,
-		"log-driver":        d.LogDriver,
-		"log-opts-max-size": d.LogOptsMaxSize,
-		"storage-driver":    d.StorageDriver,
+		"Version":        d.Version,
+		"CGroupDriver":   d.CGroupDriver,
+		"LogDriver":      d.LogDriver,
+		"LogOptsMaxSize": d.LogOptsMaxSize,
+		"StorageDriver":  d.StorageDriver,
 	}
-	t, err := template.New("ver").Parse(dedent.Dedent(`
-        apt-get update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get -y install apt-transport-https ca-certificates curl
-        curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | apt-key add -qq - >/dev/null
-        cat <<EOF | tee /etc/apt/sources.list.d/docker.list
-        deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable
-        EOF
-        apt-get update -qq >/dev/null
-        {{- if ne .version "" }}
-        DOCKER_VER=$(apt-cache madison docker-ce | awk '/{{ .version }}/ {print$3}' | head -1)
-        apt-get -y install -qq docker-ce=$DOCKER_VER docker-ce-cli=$DOCKER_VER containerd.io
-        {{- else }}
-        apt-get -y install -qq docker-ce docker-ce-cli containerd.io
-        {{- end }}
-        cat <<EOF | tee /etc/docker/daemon.json
-        {
-          "registry-mirrors": [
-              "https://dockerhub.azk8s.cn",
-              "https://hub-mirror.c.163.com"
-          ],
-        {{- if eq .cgroup-driver "systemd" }}
-          "exec-opts": ["native.cgroupdriver=systemd"],
-        {{- end }}
-          "log-driver": "{{ .log-driver }}",
-          "log-opts": {
-            "max-size": "{{ .log-opts-max-size }}"
-          },
-          "storage-driver": "{{ .storage-driver }}"
-        }
-        EOF
-        mkdir -p /etc/systemd/system/docker.service.d
+	t, err := template.New("text").Parse(dedent.Dedent(`
+		apt-get update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get -y install apt-transport-https ca-certificates curl
+		curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | apt-key add -qq - >/dev/null
+		cat <<EOF | tee /etc/apt/sources.list.d/docker.list
+		deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable
+		EOF
+		apt-get update -qq >/dev/null
+		{{- if ne .Version "" }}
+		DOCKER_VER=$(apt-cache madison docker-ce | awk '/{{ .Version }}/ {print$3}' | head -1)
+		apt-get -y install -qq docker-ce=$DOCKER_VER docker-ce-cli=$DOCKER_VER containerd.io
+		{{- else }}
+		apt-get -y install -qq docker-ce docker-ce-cli containerd.io
+		{{- end }}
+		cat <<EOF | tee /etc/docker/daemon.json
+		{
+		  "registry-mirrors": [
+		      "https://dockerhub.azk8s.cn",
+		      "https://hub-mirror.c.163.com"
+		  ],
+		{{- if eq .CGroupDriver "systemd" }}
+		  "exec-opts": ["native.cgroupdriver=systemd"],
+		{{- end }}
+		  "log-driver": "{{ .LogDriver }}",
+		  "log-opts": {
+		    "max-size": "{{ .LogOptsMaxSize }}"
+		  },
+		  "storage-driver": "{{ .StorageDriver }}"
+		}
+		EOF
+		mkdir -p /etc/systemd/system/docker.service.d
 	`))
 	if err != nil {
 		return "", err
@@ -149,46 +149,46 @@ type Yum struct {
 
 func (Yum) Docker(d rundata.Docker) (string, error) {
 	m := map[string]interface{}{
-		"version":           d.Version,
-		"cgroup-driver":     d.CGroupDriver,
-		"log-driver":        d.LogDriver,
-		"log-opts-max-size": d.LogOptsMaxSize,
-		"storage-driver":    d.StorageDriver,
+		"Version":        d.Version,
+		"CGroupDriver":   d.CGroupDriver,
+		"LogDriver":      d.LogDriver,
+		"LogOptsMaxSize": d.LogOptsMaxSize,
+		"StorageDriver":  d.StorageDriver,
 	}
 	t, err := template.New("ver").Parse(dedent.Dedent(`
-        yum install -y -q yum-utils
-        yum-config-manager --add-repo \
-          https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-        {{- if ne .version "" }}
-        DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
-        yum install -y -q docker-ce-$DOCKER_VER docker-ce-cli-$DOCKER_VER containerd.io
-        {{- else }}
-        yum install -y -q docker-ce docker-ce-cli containerd.io
-        {{- end }}
-        mkdir -p /etc/docker
-        cat <<EOF | tee /etc/docker/daemon.json
-        {
-          "registry-mirrors": [
-              "https://dockerhub.azk8s.cn",
-              "https://hub-mirror.c.163.com"
-          ],
-        {{- if eq .cgroup-driver "systemd" }}
-          "exec-opts": ["native.cgroupdriver=systemd"],
-        {{- end }}
-          "log-driver": "{{ .log-driver }}",
-          "log-opts": {
-            "max-size": "{{ .log-opts-max-size }}"
-          },
-        {{- if eq .storage-driver "overlay2" }}
-          "storage-driver": "overlay2",
-          "storage-opts": [
-            "overlay2.override_kernel_check=true"
-          ]
-        {{- end }}
-        }
-        EOF
-        mkdir -p /etc/systemd/system/docker.service.d
-    `))
+		yum install -y -q yum-utils
+		yum-config-manager --add-repo \
+		  https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+		{{- if ne .Version "" }}
+		DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/{{ .Version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
+		yum install -y -q docker-ce-$DOCKER_VER docker-ce-cli-$DOCKER_VER containerd.io
+		{{- else }}
+		yum install -y -q docker-ce docker-ce-cli containerd.io
+		{{- end }}
+		mkdir -p /etc/docker
+		cat <<EOF | tee /etc/docker/daemon.json
+		{
+		  "registry-mirrors": [
+		      "https://dockerhub.azk8s.cn",
+		      "https://hub-mirror.c.163.com"
+		  ],
+		{{- if eq .CGroupDriver "systemd" }}
+		  "exec-opts": ["native.cgroupdriver=systemd"],
+		{{- end }}
+		  "log-driver": "{{ .LogDriver }}",
+		  "log-opts": {
+		    "max-size": "{{ .LogOptsMaxSize }}"
+		  },
+		{{- if eq .StorageDriver "overlay2" }}
+		  "storage-driver": "overlay2",
+		  "storage-opts": [
+		    "overlay2.override_kernel_check=true"
+		  ]
+		{{- end }}
+		}
+		EOF
+		mkdir -p /etc/systemd/system/docker.service.d
+	`))
 	if err != nil {
 		return "", err
 	}
