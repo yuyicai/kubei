@@ -244,7 +244,7 @@ func (Yum) KubeComponent(version string) (string, error) {
         repo_gpgcheck=1
         gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
         EOF
-        setenforce 0
+        setenforce 0 || true
         sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
         {{- if ne .version "" }}
         KUBE_VER=$(yum list kubelet --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
