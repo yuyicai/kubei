@@ -7,6 +7,8 @@ const (
 	DefaultSSHUser = "root"
 	DefaultSSHPort = "22"
 
+	InstallTypeOffline = "offline"
+
 	// kubeadm
 	DefaultServiceSubnet        = "10.96.0.0/12"
 	DefaultPodNetworkCidr       = "10.244.0.0/16"
@@ -49,9 +51,8 @@ const (
 )
 
 const (
-	InstallationTypeOffline = 1 << iota
-	InstallationTypeApt
-	InstallationTypeYum
+	PackageManagementTypeApt = 1 << iota
+	PackageManagementTypeYum
 )
 
 // container engine

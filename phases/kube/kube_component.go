@@ -39,7 +39,7 @@ func InstallKubeComponent(version string, nodes []*rundata.Node) error {
 }
 
 func installKubeComponent(version string, node *rundata.Node) error {
-	cmdText := cmdtext.NewKubeText(node.InstallationType)
+	cmdText := cmdtext.NewKubeText(node.PackageManagementType)
 	cmd, err := cmdText.KubeComponent(version)
 	if err != nil {
 		return err

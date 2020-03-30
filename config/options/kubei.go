@@ -57,8 +57,6 @@ func (k *Kubei) ApplyTo(data *rundata.Kubei) {
 	k.Reset.ApplyTo(&data.Reset)
 
 	if len(k.JumpServer) > 0 {
-		data.JumpServer.IsUse = true
-
 		if err := mapstructure.Decode(k.JumpServer, &data.JumpServer.HostInfo); err != nil {
 			klog.Fatal(err)
 		}

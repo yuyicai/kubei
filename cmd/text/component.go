@@ -276,9 +276,9 @@ func (Yum) RemoveKubeComponent() string {
 
 func NewContainerEngineText(installationType int) DocekrText {
 	switch installationType {
-	case constants.InstallationTypeApt:
+	case constants.PackageManagementTypeApt:
 		return &Apt{}
-	case constants.InstallationTypeYum:
+	case constants.PackageManagementTypeYum:
 		return &Yum{}
 	}
 	return nil
@@ -286,9 +286,9 @@ func NewContainerEngineText(installationType int) DocekrText {
 
 func NewKubeText(installationType int) KubeText {
 	switch installationType {
-	case constants.InstallationTypeApt:
+	case constants.PackageManagementTypeApt:
 		return &Apt{}
-	case constants.InstallationTypeYum:
+	case constants.PackageManagementTypeYum:
 		return &Yum{}
 	}
 	return nil

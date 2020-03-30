@@ -66,7 +66,7 @@ func RemoveKubeComponente(nodes []*rundata.Node) error {
 }
 
 func removeKubeComponent(node *rundata.Node) error {
-	cmdText := cmdtext.NewKubeText(node.InstallationType)
+	cmdText := cmdtext.NewKubeText(node.PackageManagementType)
 	if err := node.SSH.Run(cmdText.RemoveKubeComponent()); err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func RemoveContainerEngine(nodes []*rundata.Node) error {
 }
 
 func removeContainerEngine(node *rundata.Node) error {
-	cmdText := cmdtext.NewContainerEngineText(node.InstallationType)
+	cmdText := cmdtext.NewContainerEngineText(node.PackageManagementType)
 	if err := node.SSH.Run(cmdText.RemoveDocker()); err != nil {
 		return err
 	}

@@ -38,7 +38,7 @@ func InstallDocker(nodes []*rundata.Node, d rundata.Docker) error {
 }
 
 func installDocker(node *rundata.Node, d rundata.Docker) error {
-	cmdText := cmdtext.NewContainerEngineText(node.InstallationType)
+	cmdText := cmdtext.NewContainerEngineText(node.PackageManagementType)
 	cmd, err := cmdText.Docker(d)
 	if err != nil {
 		return err

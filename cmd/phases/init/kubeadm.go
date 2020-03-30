@@ -60,7 +60,7 @@ func runKubeadm(c workflow.RunData) error {
 		return errors.New("You host to set the master nodes by the flag \"--masters\"")
 	}
 
-	if err := preflight.CheckSSH(nodes, &cfg.JumpServer); err != nil {
+	if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
 		return err
 	}
 

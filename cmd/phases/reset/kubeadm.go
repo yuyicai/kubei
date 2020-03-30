@@ -44,7 +44,7 @@ func runKubeadm(c workflow.RunData) error {
 	kubeadmCfg := data.KubeadmCfg()
 	nodes := append(cfg.ClusterNodes.Masters, cfg.ClusterNodes.Worker...)
 
-	if err := preflight.CheckSSH(nodes, &cfg.JumpServer); err != nil {
+	if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
 		return err
 	}
 

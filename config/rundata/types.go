@@ -12,6 +12,7 @@ type Kubei struct {
 	ClusterNodes    ClusterNodes
 	ContainerEngine ContainerEngine
 	JumpServer      JumpServer
+	Install         Install
 }
 
 type ClusterNodes struct {
@@ -28,15 +29,15 @@ func (c *ClusterNodes) GetAllMastersHost() []string {
 }
 
 type Node struct {
-	SSH              *ssh.Client
-	HostInfo         HostInfo
-	Name             string
-	InstallationType int
+	SSH                   *ssh.Client
+	HostInfo              HostInfo
+	Name                  string
+	PackageManagementType int
+	IsOffline             bool
 }
 
 type JumpServer struct {
 	*ssh.Client
-	IsUse    bool
 	HostInfo HostInfo
 }
 
@@ -57,6 +58,10 @@ type Image struct {
 	ImageRepository string
 	ImageName       string
 	ImageTag        string
+}
+
+type Install struct {
+	Type string
 }
 
 func (i *Image) GetImage() string {

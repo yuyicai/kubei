@@ -1,28 +1,36 @@
 package preflight
 
 import (
+	"context"
 	"fmt"
+	"strings"
+
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"k8s.io/klog"
+
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/pkg/ssh"
-	"golang.org/x/sync/errgroup"
-	"k8s.io/klog"
-	"strings"
 )
 
-func CheckSSH(nodes []*rundata.Node, jumpServer *rundata.JumpServer) error {
+func Check(nodes []*rundata.Node, jumpServer *rundata.JumpServer) error {
 	if err := jumpServerCheck(jumpServer); err != nil {
 		return fmt.Errorf("[preflight] Failed to set jump server: %v", err)
 	}
 
-	g := errgroup.Group{}
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(20)
 	for _, node := range nodes {
 		node := node
-
-		g.Go(func() error {
-			if err := checkSSH(node, jumpServer); err != nil {
+		g.Go(func(ctx context.Context) error {
+			if err := sshCheck(node, jumpServer); err != nil {
 				return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
 			}
+
+			if err := packageManagementTypeCheck(node); err != nil {
+				return err
+			}
+
 			return nil
 		})
 
@@ -35,53 +43,15 @@ func CheckSSH(nodes []*rundata.Node, jumpServer *rundata.JumpServer) error {
 	return nil
 }
 
-func checkSSH(node *rundata.Node, jumpServer *rundata.JumpServer) error {
-	var err error
+func sshCheck(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	if node.SSH == nil {
-		userInfo := node.HostInfo
-
-		//Set up ssh connection through jump server
-		if jumpServer.IsUse && jumpServer.Client == nil {
-			return fmt.Errorf("Don't set jump server")
-		}
-
-		if jumpServer.IsUse {
-			klog.Infof("[%s] [preflight] Checking SSH connection (through jump server %s)", userInfo.Host, jumpServer.HostInfo.Host)
-			node.SSH, err = ssh.ConnectByJumpServer(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key, jumpServer.Client)
-			if err != nil {
-				return err
-			}
-		} else {
-
-			//Set up ssh connection direct
-			klog.Infof("[%s] [preflight] Checking SSH connection", userInfo.Host)
-			node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key)
-			if err != nil {
-				return err
-			}
-		}
-
-		klog.V(2).Infof("[%s] [preflight] Checking package management", userInfo.Host)
-		output, err := node.SSH.RunOut("cat /proc/version")
-		if err != nil {
-			return err
-		}
-		switch true {
-		case strings.Contains(string(output), "Ubuntu"):
-			klog.V(5).Infof("[%s] [preflight] The package management is \"apt\"", userInfo.Host)
-			node.InstallationType = constants.InstallationTypeApt
-		case strings.Contains(string(output), "Red"):
-			klog.V(5).Infof("[%s] [preflight] The package management is \"yum\"", userInfo.Host)
-			node.InstallationType = constants.InstallationTypeYum
-		default:
-			return fmt.Errorf("[%s] [preflight] Unsupported this system", userInfo.Host)
-		}
+		return setSSHConnect(node, jumpServer)
 	}
 	return nil
 }
 
 func jumpServerCheck(jumpServer *rundata.JumpServer) error {
-	if jumpServer.IsUse && jumpServer.Client == nil {
+	if jumpServer.HostInfo.Host != "" && jumpServer.Client == nil {
 		hostInfo := jumpServer.HostInfo
 		klog.Infof("[preflight] Checking jump server %s", hostInfo.Host)
 		var err error
@@ -89,6 +59,59 @@ func jumpServerCheck(jumpServer *rundata.JumpServer) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
+	var err error
+	userInfo := node.HostInfo
+
+	//Set up ssh connection through jump server
+	if jumpServer.HostInfo.Host != "" {
+		klog.Infof("[%s] [preflight] Checking SSH connection (through jump server %s)", userInfo.Host, jumpServer.HostInfo.Host)
+		node.SSH, err = ssh.ConnectByJumpServer(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key, jumpServer.Client)
+		if err != nil {
+			return err
+		}
+	} else {
+
+		//Set up ssh connection direct
+		klog.Infof("[%s] [preflight] Checking SSH connection", userInfo.Host)
+		node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func packageManagementTypeCheck(node *rundata.Node) error {
+	hostInfo := node.HostInfo
+
+	klog.V(2).Infof("[%s] [preflight] Checking package management", hostInfo.Host)
+	output, err := node.SSH.RunOut("cat /proc/version")
+	if err != nil {
+		return err
+	}
+
+	outputStr := string(output)
+	switch true {
+	case strings.Contains(outputStr, "Ubuntu"):
+		klog.V(5).Infof("[%s] [preflight] The package management is \"apt\"", hostInfo.Host)
+		node.PackageManagementType = constants.PackageManagementTypeApt
+	case strings.Contains(outputStr, "Red"):
+		klog.V(5).Infof("[%s] [preflight] The package management is \"yum\"", hostInfo.Host)
+		node.PackageManagementType = constants.PackageManagementTypeYum
+	default:
+		return fmt.Errorf("[%s] [preflight] Unsupported this system", hostInfo.Host)
+	}
+	return nil
+}
+
+func offlineCheck(node *rundata.Node, install rundata.Install) error {
+	if install.Type == constants.InstallTypeOffline {
+		node.IsOffline = true
 	}
 	return nil
 }

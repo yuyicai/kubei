@@ -12,6 +12,7 @@ type Kubei struct {
 	ClusterNodes    ClusterNodes
 	ContainerEngine ContainerEngine
 	JumpServer      map[string]string
+	Offline         bool
 }
 
 type PublicHostInfo struct {
