@@ -31,16 +31,12 @@ func Check(nodes []*rundata.Node, jumpServer *rundata.JumpServer) error {
 				return err
 			}
 
-			return nil
+			return sendAndtar("", "", node)
 		})
 
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return g.Wait()
 }
 
 func sshCheck(node *rundata.Node, jumpServer *rundata.JumpServer) error {
@@ -75,7 +71,6 @@ func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 			return err
 		}
 	} else {
-
 		//Set up ssh connection direct
 		klog.Infof("[%s] [preflight] Checking SSH connection", userInfo.Host)
 		node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key)
@@ -107,4 +102,21 @@ func packageManagementTypeCheck(node *rundata.Node) error {
 		return fmt.Errorf("[%s] [preflight] Unsupported this system", hostInfo.Host)
 	}
 	return nil
+}
+
+func sendAndtar(dstFile, srcFile string, node *rundata.Node) error {
+	if err := sendFile(dstFile, srcFile, node); err != nil {
+		return err
+	}
+	klog.Infof("[%s] [send] send %s, ", node.HostInfo.Host, "dstFile")
+
+	return tar(dstFile, node)
+}
+
+func sendFile(dstFile, srcFile string, node *rundata.Node) error {
+	return node.SSH.SendFile(dstFile, srcFile)
+}
+
+func tar(dstFile string, node *rundata.Node) error {
+	return node.SSH.Run(fmt.Sprintf("mkdir -p /tmp/.kube && tar xf %s -C /tmp/.kube", dstFile))
 }

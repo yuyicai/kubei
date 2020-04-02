@@ -7,6 +7,7 @@ require (
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/pkg/errors v0.9.1
+	github.com/pkg/sftp v1.11.0
 	github.com/spf13/cobra v0.0.6
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073

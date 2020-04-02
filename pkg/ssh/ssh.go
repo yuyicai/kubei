@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"io"
 	"io/ioutil"
 	"k8s.io/klog"
 	"net"
+	"os"
 	"strings"
 )
 
@@ -21,19 +23,9 @@ type Client struct {
 }
 
 func Connect(host, port, user, password, key string) (*Client, error) {
-	config := &ssh.ClientConfig{
-		User:            user,
-		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
-	}
-
-	if key != "" {
-		signer, err := makePrivateKeySignerFromFile(key)
-		if err != nil {
-			return nil, err
-		}
-		config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
-	} else {
-		config.Auth = []ssh.AuthMethod{ssh.Password(password)}
+	config, err := setConf(user, password, key)
+	if err != nil {
+		return nil, err
 	}
 
 	client, err := ssh.Dial("tcp", net.JoinHostPort(host, port), config)
@@ -44,19 +36,9 @@ func Connect(host, port, user, password, key string) (*Client, error) {
 }
 
 func ConnectByJumpServer(host, port, user, password, key string, jumpServer *Client) (*Client, error) {
-	config := &ssh.ClientConfig{
-		User:            user,
-		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
-	}
-
-	if key != "" {
-		signer, err := makePrivateKeySignerFromFile(key)
-		if err != nil {
-			return nil, err
-		}
-		config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
-	} else {
-		config.Auth = []ssh.AuthMethod{ssh.Password(password)}
+	config, err := setConf(user, password, key)
+	if err != nil {
+		return nil, err
 	}
 
 	conn, err := jumpServer.client.Dial("tcp", net.JoinHostPort(host, port))
@@ -69,6 +51,24 @@ func ConnectByJumpServer(host, port, user, password, key string, jumpServer *Cli
 	}
 
 	return &Client{client: ssh.NewClient(ncc, chans, reqs), host: host, password: password, user: user}, nil
+}
+
+func setConf(user, password, key string) (*ssh.ClientConfig, error) {
+	config := &ssh.ClientConfig{
+		User:            user,
+		HostKeyCallback: ssh.HostKeyCallback(func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }),
+	}
+
+	if key != "" {
+		signer, err := makePrivateKeySignerFromFile(key)
+		if err != nil {
+			return nil, err
+		}
+		config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
+	} else {
+		config.Auth = []ssh.AuthMethod{ssh.Password(password)}
+	}
+	return config, nil
 }
 
 func makePrivateKeySignerFromFile(key string) (ssh.Signer, error) {
@@ -196,6 +196,33 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), session.Wait()
+}
+
+func (c *Client) SendFile(dstFile, srcFile string) error {
+	sc, err := sftp.NewClient(c.client)
+	if err != nil {
+		return fmt.Errorf("unable to start sftp subsytem: %v", err)
+	}
+	defer c.Close()
+
+	w, err := sc.Create(dstFile)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	f, err := os.Open(srcFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func sendSudoPassword(password, host string, in io.WriteCloser, out io.Reader) error {
