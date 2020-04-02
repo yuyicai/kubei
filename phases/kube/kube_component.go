@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
+	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
 	"k8s.io/klog"
@@ -24,28 +25,25 @@ func InstallKubeComponent(version string, nodes []*rundata.Node) error {
 			if err := system.Restart("kubelet", node); err != nil {
 				return err
 			}
-
 			klog.Infof("[%s] [kube] Successfully installed Kubernetes component", node.HostInfo.Host)
 
 			return nil
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return g.Wait()
 }
 
 func installKubeComponent(version string, node *rundata.Node) error {
-	cmdText := cmdtext.NewKubeText(node.PackageManagementType)
-	cmd, err := cmdText.KubeComponent(version)
-	if err != nil {
-		return err
+	switch node.InstallType {
+	case constants.InstallTypeOnline:
+		cmdText := cmdtext.NewKubeText(node.PackageManagementType)
+		cmd, err := cmdText.KubeComponent(version)
+		if err != nil {
+			return err
+		}
+		return node.SSH.Run(cmd)
 	}
-	if err := node.SSH.Run(cmd); err != nil {
-		return err
-	}
+
 	return nil
 }

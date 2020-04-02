@@ -30,21 +30,14 @@ func InstallDocker(nodes []*rundata.Node, d rundata.Docker) error {
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return g.Wait()
 }
 
 func installDocker(node *rundata.Node, d rundata.Docker) error {
 	cmdText := cmdtext.NewContainerEngineText(node.PackageManagementType)
-	cmd, err := cmdText.Docker(d)
+	cmd, err := cmdText.Docker(node.InstallType, d)
 	if err != nil {
 		return err
 	}
-	if err := node.SSH.Run(cmd); err != nil {
-		return err
-	}
-	return nil
+	return node.SSH.Run(cmd)
 }

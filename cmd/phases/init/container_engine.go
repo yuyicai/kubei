@@ -42,15 +42,11 @@ func runContainerEngine(c workflow.RunData) error {
 
 	cfg := data.Cfg()
 	containerEngine := data.ContainerEngine()
-	nodes := append(cfg.ClusterNodes.Masters, cfg.ClusterNodes.Worker...)
+	nodes := cfg.ClusterNodes.GetAllNodes()
 
 	if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
 		return err
 	}
 
-	if err := runtimephases.InstallContainerEngine(nodes, *containerEngine); err != nil {
-		return err
-	}
-
-	return nil
+	return runtimephases.InstallContainerEngine(nodes, *containerEngine)
 }

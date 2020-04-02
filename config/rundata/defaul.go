@@ -79,7 +79,7 @@ func defaultNginxConf(n *Nginx) {
 }
 
 func defaultContainerEngine(c *ContainerEngine) {
-	if c.Type == constants.IsNotSet {
+	if c.Type == "" {
 		c.Type = constants.ContainerEngineTypeDocker
 	}
 

@@ -42,15 +42,12 @@ func runKubeComponent(c workflow.RunData) error {
 
 	cfg := data.Cfg()
 	version := data.KubeadmCfg().Version
-	nodes := append(cfg.ClusterNodes.Masters, cfg.ClusterNodes.Worker...)
+	nodes := cfg.ClusterNodes.GetAllNodes()
 
 	if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
 		return err
 	}
 
-	if err := kubephases.InstallKubeComponent(version, nodes); err != nil {
-		return err
-	}
+	return kubephases.InstallKubeComponent(version, nodes)
 
-	return nil
 }

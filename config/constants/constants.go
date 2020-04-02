@@ -8,6 +8,17 @@ const (
 	DefaultSSHPort = "22"
 
 	InstallTypeOffline = "offline"
+	InstallTypeOnline  = "online"
+
+	// container engine
+	ContainerEngineTypeDocker     = "docker"
+	ContainerEngineTypeContainerd = "containerd"
+	ContainerEngineTypeCRIO       = "cri-o"
+	RegistryMirrors               = "https://dockerhub.azk8s.cn"
+	DefaultCGroupDriver           = "systemd"
+	DefaultLogDriver              = "json-file"
+	DefaultLogOptsMaxSize         = "500m"
+	DockerDefaultStorageDriver    = "overlay2"
 
 	// kubeadm
 	DefaultServiceSubnet        = "10.96.0.0/12"
@@ -53,18 +64,4 @@ const (
 const (
 	PackageManagementTypeApt = 1 << iota
 	PackageManagementTypeYum
-)
-
-// container engine
-const (
-	ContainerEngineTypeDocker = 1 << iota
-	ContainerEngineTypeContainerd
-	ContainerEngineTypeCRIO
-
-	RegistryMirrors       = "https://dockerhub.azk8s.cn"
-	DefaultCGroupDriver   = "systemd"
-	DefaultLogDriver      = "json-file"
-	DefaultLogOptsMaxSize = "500m"
-
-	DockerDefaultStorageDriver = "overlay2"
 )

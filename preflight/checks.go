@@ -108,10 +108,3 @@ func packageManagementTypeCheck(node *rundata.Node) error {
 	}
 	return nil
 }
-
-func offlineCheck(node *rundata.Node, install rundata.Install) error {
-	if install.Type == constants.InstallTypeOffline {
-		node.IsOffline = true
-	}
-	return nil
-}

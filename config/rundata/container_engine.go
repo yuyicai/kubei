@@ -1,7 +1,7 @@
 package rundata
 
 type ContainerEngine struct {
-	Type   int
+	Type   string
 	Docker Docker
 }
 

@@ -28,12 +28,16 @@ func (c *ClusterNodes) GetAllMastersHost() []string {
 	return hosts
 }
 
+func (c *ClusterNodes) GetAllNodes() []*Node {
+	return append(c.Masters, c.Worker...)
+}
+
 type Node struct {
 	SSH                   *ssh.Client
 	HostInfo              HostInfo
 	Name                  string
 	PackageManagementType int
-	IsOffline             bool
+	InstallType           string
 }
 
 type JumpServer struct {
