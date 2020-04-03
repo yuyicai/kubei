@@ -40,18 +40,14 @@ func runKubeComponent(c workflow.RunData) error {
 		return errors.New("reset phase invoked with an invalid rundata struct")
 	}
 
-	cfg := data.Cfg()
+	cfg := data.KubeiCfg()
+
+	if err := preflight.Check(cfg); err != nil {
+		return err
+	}
 
 	if cfg.Reset.RemoveKubeComponent {
-		nodes := append(cfg.ClusterNodes.Masters, cfg.ClusterNodes.Worker...)
-
-		if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
-			return err
-		}
-
-		if err := resetphases.RemoveKubeComponente(nodes); err != nil {
-			return err
-		}
+		return resetphases.RemoveKubeComponente(cfg.ClusterNodes.GetAllNodes())
 	}
 
 	return nil

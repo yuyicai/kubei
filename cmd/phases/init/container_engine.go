@@ -40,13 +40,11 @@ func runContainerEngine(c workflow.RunData) error {
 		return errors.New("runtime phase invoked with an invalid data struct")
 	}
 
-	cfg := data.Cfg()
-	containerEngine := data.ContainerEngine()
-	nodes := cfg.ClusterNodes.GetAllNodes()
+	cfg := data.KubeiCfg()
 
-	if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
+	if err := preflight.Check(cfg); err != nil {
 		return err
 	}
 
-	return runtimephases.InstallContainerEngine(nodes, *containerEngine)
+	return runtimephases.InstallContainerEngine(cfg.ClusterNodes.GetAllNodes(), cfg.ContainerEngine)
 }

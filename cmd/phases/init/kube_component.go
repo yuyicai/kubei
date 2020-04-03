@@ -40,14 +40,12 @@ func runKubeComponent(c workflow.RunData) error {
 		return errors.New("kube phase invoked with an invalid data struct")
 	}
 
-	cfg := data.Cfg()
-	version := data.KubeadmCfg().Version
-	nodes := cfg.ClusterNodes.GetAllNodes()
+	cfg := data.KubeiCfg()
 
-	if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
+	if err := preflight.Check(cfg); err != nil {
 		return err
 	}
 
-	return kubephases.InstallKubeComponent(version, nodes)
+	return kubephases.InstallKubeComponent(cfg.Kubernetes.Version, cfg.ClusterNodes.GetAllNodes())
 
 }

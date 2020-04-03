@@ -3,7 +3,7 @@ package rundata
 import "github.com/yuyicai/kubei/config/constants"
 
 func DefaultkubeadmConf(k *Kubeadm) {
-	if k.LocalAPIEndpoint.BindPort == constants.IsNotSet {
+	if k.LocalAPIEndpoint.BindPort == 0 {
 		k.LocalAPIEndpoint.BindPort = constants.DefaultAPIBindPort
 	}
 }
@@ -11,15 +11,15 @@ func DefaultkubeadmConf(k *Kubeadm) {
 func DefaultKubeiConf(k *Kubei) {
 	defaultAddonsConf(&k.Addons)
 	defaultContainerEngine(&k.ContainerEngine)
+	defaultNetworkPluginsConf(&k.NetworkPlugins)
+	defaultHAConf(&k.HA)
 }
 
 func defaultAddonsConf(a *Addons) {
-	defaultNetworkPluginsConf(&a.NetworkPlugins)
-	defaultHAConf(&a.HA)
 }
 
 func defaultHAConf(h *HA) {
-	if h.Type == constants.IsNotSet {
+	if h.Type == "" {
 		h.Type = constants.HATypeNone
 	}
 
@@ -53,7 +53,7 @@ func defaultFlannelConf(f *Flannel) {
 }
 
 func defaultLocalSLBConf(l *LocalSLB) {
-	if l.Type == constants.IsNotSet {
+	if l.Type == "" {
 		l.Type = constants.LocalSLBTypeNginx
 	}
 

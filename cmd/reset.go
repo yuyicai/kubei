@@ -106,11 +106,7 @@ func newResetData(cmd *cobra.Command, args []string, options *resetOptions, out 
 	return resetDatacfg, nil
 }
 
-func (d *resetData) Cluster() *rundata.ClusterNodes {
-	return &d.kubei.ClusterNodes
-}
-
-func (d *resetData) Cfg() *rundata.Kubei {
+func (d *resetData) KubeiCfg() *rundata.Kubei {
 	return d.kubei
 }
 

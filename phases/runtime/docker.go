@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
+	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
 	"k8s.io/klog"
@@ -12,7 +13,7 @@ import (
 
 func InstallDocker(nodes []*rundata.Node, d rundata.Docker) error {
 	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(20)
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
 	for _, node := range nodes {
 		node := node
 		g.Go(func(ctx context.Context) error {
@@ -39,5 +40,6 @@ func installDocker(node *rundata.Node, d rundata.Docker) error {
 	if err != nil {
 		return err
 	}
+
 	return node.SSH.Run(cmd)
 }

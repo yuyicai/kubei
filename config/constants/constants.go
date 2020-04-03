@@ -7,8 +7,12 @@ const (
 	DefaultSSHUser = "root"
 	DefaultSSHPort = "22"
 
-	InstallTypeOffline = "offline"
-	InstallTypeOnline  = "online"
+	InstallTypeOffline       = "offline"
+	InstallTypeOnline        = "online"
+	PackageManagementTypeApt = "apt"
+	PackageManagementTypeYum = "yum"
+	DefaultLocalSLBInterval  = 2 * time.Second
+	DefaultLocalSLBTimeout   = 6 * time.Minute
 
 	// container engine
 	ContainerEngineTypeDocker     = "docker"
@@ -26,17 +30,22 @@ const (
 	DefaultControlPlaneEndpoint = "apiserver.k8s.local:6443"
 	DefaultImageRepository      = "gcr.azk8s.cn/google_containers"
 	DefaultAPIBindPort          = 6443
+	DefaultWaitNodeInterval     = 2 * time.Second
+	DefaultWaitNodeTimeout      = 6 * time.Minute
 
 	// networking plugin
-	DefaulNetworkPlugin = "flannel"
-
-	// flannel
+	DefaulNetworkPlugin           = "flannel"
 	DefaultFlannelImageRepository = "quay.azk8s.cn/coreos"
 	DefaultFlannelImageName       = "flannel"
 	DefaultFlannelVersion         = "v0.11.0-amd64"
 	DefaultFlannelBackendType     = "vxlan"
 
-	// nginx
+	// ha
+	LocalSLBTypeNginx           = "nginx"
+	LocalSLBTypeHAproxy         = "haproxy"
+	HATypeNone                  = "none"
+	HATypeLocalSLB              = "local"
+	HATypeExternalSLB           = "external"
 	DefaultNginxImageRepository = ""
 	DefaultNginxImageName       = "nginx"
 	DefaultNginxVersion         = "1.17"
@@ -44,24 +53,5 @@ const (
 
 	LoopbackAddress = "127.0.0.1"
 
-	DefaultLocalSLBInterval = 2 * time.Second
-	DefaultLocalSLBTimeout  = 6 * time.Minute
-
-	IsNotSet = 0
-)
-
-const (
-	HATypeNone = 1 << iota
-	HATypeLocalSLB
-	HATypeExternalSLB
-)
-
-const (
-	LocalSLBTypeNginx = 1 << iota
-	LocalSLBTypeHAproxy
-)
-
-const (
-	PackageManagementTypeApt = 1 << iota
-	PackageManagementTypeYum
+	DefaultGOMAXPROCS = 20
 )

@@ -40,13 +40,19 @@ func (c *ContainerEngine) ApplyTo(data *rundata.ContainerEngine) {
 	}
 }
 
-func (c *Reset) ApplyTo(data *rundata.Reset) {
-	if c.RemoveKubeComponent {
-		data.RemoveKubeComponent = c.RemoveKubeComponent
+func (k *Kubernetes) ApplyTo(data *rundata.Kubernetes) {
+	if k.Version != "" {
+		data.Version = strings.Replace(k.Version, "v", "", -1)
+	}
+}
+
+func (r *Reset) ApplyTo(data *rundata.Reset) {
+	if r.RemoveKubeComponent {
+		data.RemoveKubeComponent = r.RemoveKubeComponent
 	}
 
-	if c.RemoveContainerEngine {
-		data.RemoveContainerEngine = c.RemoveContainerEngine
+	if r.RemoveContainerEngine {
+		data.RemoveContainerEngine = r.RemoveContainerEngine
 	}
 }
 

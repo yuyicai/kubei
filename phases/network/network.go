@@ -12,9 +12,7 @@ func Network(node *rundata.Node, net rundata.NetworkPlugins, knet kubeadmapi.Net
 	case "none":
 		klog.Info("[network] Does not network plugin")
 	case "flannel":
-		if err := Flannel(node, net.Flannel, knet); err != nil {
-			return err
-		}
+		return Flannel(node, net.Flannel, knet)
 	case "calico":
 		//TODO
 		klog.Info("[network] calico //TODO")

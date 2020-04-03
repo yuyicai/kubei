@@ -11,8 +11,13 @@ type Kubei struct {
 	Reset           Reset
 	ClusterNodes    ClusterNodes
 	ContainerEngine ContainerEngine
+	Kubernetes      Kubernetes
 	JumpServer      map[string]string
 	Offline         bool
+}
+
+type Kubernetes struct {
+	Version string
 }
 
 type PublicHostInfo struct {

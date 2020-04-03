@@ -5,7 +5,6 @@ import (
 )
 
 type ResetData interface {
-	Cluster() *rundata.ClusterNodes
-	Cfg() *rundata.Kubei
+	KubeiCfg() *rundata.Kubei
 	KubeadmCfg() *rundata.Kubeadm
 }

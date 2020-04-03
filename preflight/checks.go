@@ -13,17 +13,36 @@ import (
 	"github.com/yuyicai/kubei/pkg/ssh"
 )
 
-func Check(nodes []*rundata.Node, jumpServer *rundata.JumpServer) error {
-	if err := jumpServerCheck(jumpServer); err != nil {
+func Check(cfg *rundata.Kubei) error {
+
+	if err := jumpServerCheck(&cfg.JumpServer); err != nil {
 		return fmt.Errorf("[preflight] Failed to set jump server: %v", err)
 	}
 
+	return nodesCheck(cfg)
+}
+
+func jumpServerCheck(jumpServer *rundata.JumpServer) error {
+	if jumpServer.HostInfo.Host != "" && jumpServer.Client == nil {
+		hostInfo := jumpServer.HostInfo
+		klog.Infof("[preflight] Checking jump server %s", hostInfo.Host)
+		var err error
+		jumpServer.Client, err = ssh.Connect(hostInfo.Host, hostInfo.Port, hostInfo.User, hostInfo.Password, hostInfo.Key)
+		return err
+	}
+
+	return nil
+}
+
+func nodesCheck(cfg *rundata.Kubei) error {
+
 	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(20)
-	for _, node := range nodes {
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range cfg.ClusterNodes.GetAllNodes() {
 		node := node
 		g.Go(func(ctx context.Context) error {
-			if err := sshCheck(node, jumpServer); err != nil {
+
+			if err := sshCheck(node, &cfg.JumpServer); err != nil {
 				return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
 			}
 
@@ -33,7 +52,6 @@ func Check(nodes []*rundata.Node, jumpServer *rundata.JumpServer) error {
 
 			return sendAndtar("", "", node)
 		})
-
 	}
 
 	return g.Wait()
@@ -46,19 +64,6 @@ func sshCheck(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	return nil
 }
 
-func jumpServerCheck(jumpServer *rundata.JumpServer) error {
-	if jumpServer.HostInfo.Host != "" && jumpServer.Client == nil {
-		hostInfo := jumpServer.HostInfo
-		klog.Infof("[preflight] Checking jump server %s", hostInfo.Host)
-		var err error
-		jumpServer.Client, err = ssh.Connect(hostInfo.Host, hostInfo.Port, hostInfo.User, hostInfo.Password, hostInfo.Key)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	var err error
 	userInfo := node.HostInfo
@@ -67,18 +72,13 @@ func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	if jumpServer.HostInfo.Host != "" {
 		klog.Infof("[%s] [preflight] Checking SSH connection (through jump server %s)", userInfo.Host, jumpServer.HostInfo.Host)
 		node.SSH, err = ssh.ConnectByJumpServer(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key, jumpServer.Client)
-		if err != nil {
-			return err
-		}
+		return err
 	} else {
 		//Set up ssh connection direct
 		klog.Infof("[%s] [preflight] Checking SSH connection", userInfo.Host)
 		node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key)
-		if err != nil {
-			return err
-		}
+		return err
 	}
-	return nil
 }
 
 func packageManagementTypeCheck(node *rundata.Node) error {
@@ -105,12 +105,16 @@ func packageManagementTypeCheck(node *rundata.Node) error {
 }
 
 func sendAndtar(dstFile, srcFile string, node *rundata.Node) error {
-	if err := sendFile(dstFile, srcFile, node); err != nil {
-		return err
-	}
-	klog.Infof("[%s] [send] send %s, ", node.HostInfo.Host, "dstFile")
+	if node.InstallType == constants.InstallTypeOffline && !node.IsSend {
+		if err := sendFile(dstFile, srcFile, node); err != nil {
+			return err
+		}
+		klog.Infof("[%s] [send] send %s, ", node.HostInfo.Host, "dstFile")
 
-	return tar(dstFile, node)
+		return tar(dstFile, node)
+	}
+	node.IsSend = true
+	return nil
 }
 
 func sendFile(dstFile, srcFile string, node *rundata.Node) error {

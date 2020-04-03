@@ -282,7 +282,7 @@ func (Yum) RemoveKubeComponent() string {
 	return "yum remove -y kubelet kubeadm kubectl  || true"
 }
 
-func NewContainerEngineText(installationType int) DocekrText {
+func NewContainerEngineText(installationType string) DocekrText {
 	switch installationType {
 	case constants.PackageManagementTypeApt:
 		return &Apt{}
@@ -292,7 +292,7 @@ func NewContainerEngineText(installationType int) DocekrText {
 	return nil
 }
 
-func NewKubeText(installationType int) KubeText {
+func NewKubeText(installationType string) KubeText {
 	switch installationType {
 	case constants.PackageManagementTypeApt:
 		return &Apt{}

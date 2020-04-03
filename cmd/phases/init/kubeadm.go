@@ -11,7 +11,6 @@ import (
 	"github.com/yuyicai/kubei/preflight"
 	"k8s.io/klog"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
-	"time"
 )
 
 // NewKubeadmPhase creates a kubei workflow phase that implements handling of kubeadm.
@@ -49,30 +48,26 @@ func runKubeadm(c workflow.RunData) error {
 		return errors.New("kubeadm phase invoked with an invalid rundata struct")
 	}
 
-	cfg := data.Cfg()
-	cluster := cfg.ClusterNodes
-	masters := cluster.Masters
-	workers := cluster.Worker
-	nodes := append(masters, workers...)
+	kubeiCfg := data.KubeiCfg()
 	kubeadmCfg := data.KubeadmCfg()
 
-	if len(masters) == 0 {
-		return errors.New("You host to set the master nodes by the flag \"--masters\"")
+	if len(kubeiCfg.ClusterNodes.GetAllMastersHost()) == 0 {
+		return errors.New("You host to set the master nodes by the flag --masters")
 	}
 
-	if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
+	if err := preflight.Check(kubeiCfg); err != nil {
 		return err
 	}
 
 	// init master0
-	if err := kubeadmphases.InitMaster(masters[0], kubeadmCfg); err != nil {
+	masters := kubeiCfg.ClusterNodes.Masters
+	masters0 := masters[0]
+	if err := kubeadmphases.InitMaster(masters0, kubeiCfg, kubeadmCfg); err != nil {
 		return err
 	}
 
 	// add network plugin
-	net := cfg.Addons.NetworkPlugins
-	knet := kubeadmCfg.Networking
-	if err := networkphases.Network(masters[0], net, knet); err != nil {
+	if err := networkphases.Network(masters0, kubeiCfg.NetworkPlugins, kubeadmCfg.Networking); err != nil {
 		return err
 	}
 
@@ -80,26 +75,20 @@ func runKubeadm(c workflow.RunData) error {
 
 	// join to master nodes
 	if len(masters) > 1 {
-		h := &cfg.Addons.HA
-		if h.Type == constants.HATypeNone {
-			h.Type = constants.HATypeLocalSLB
+		h := &kubeiCfg.HA.Type
+		if *h == constants.HATypeNone {
+			*h = constants.HATypeLocalSLB
 		}
 
 		g.Go(func(ctx context.Context) error {
-			if err := kubeadmphases.JoinControlPlane(masters, kubeadmCfg); err != nil {
-				return err
-			}
-			return nil
+			return kubeadmphases.JoinControlPlane(masters, kubeiCfg, kubeadmCfg)
 		})
 	}
 
 	// join to worker nodes
 	// and set ha
 	g.Go(func(ctx context.Context) error {
-		if err := kubeadmphases.JoinNode(cfg, kubeadmCfg); err != nil {
-			return err
-		}
-		return nil
+		return kubeadmphases.JoinNode(kubeiCfg, kubeadmCfg)
 	})
 
 	if err := g.Wait(); err != nil {
@@ -107,11 +96,9 @@ func runKubeadm(c workflow.RunData) error {
 	}
 
 	// waiting for all nodes to become ready
-	interval := 2 * time.Second
-	timeout := 6 * time.Minute
-	output, done := kubeadmphases.CheckNodesReady(masters[0], interval, timeout)
+	output, done := kubeadmphases.CheckNodesReady(masters[0], constants.DefaultWaitNodeInterval, constants.DefaultWaitNodeTimeout)
 	if done {
-		klog.Info("Done\n", output)
+		klog.Info(output, "\nKubernetes High-Availability cluster deployment completed")
 	}
 
 	return nil

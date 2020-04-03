@@ -3,6 +3,8 @@ package preflight
 import (
 	"context"
 	"fmt"
+	"github.com/yuyicai/kubei/config/constants"
+
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	cmdtext "github.com/yuyicai/kubei/cmd/text"
 	"github.com/yuyicai/kubei/config/rundata"
@@ -10,14 +12,17 @@ import (
 )
 
 func ResetKubeadm(nodes []*rundata.Node, apiDomainName string) error {
+	return resetKubeadm(nodes, apiDomainName)
+}
 
+func resetKubeadm(nodes []*rundata.Node, apiDomainName string) error {
 	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(20)
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
 	for _, node := range nodes {
 		node := node
 		g.Go(func(ctx context.Context) error {
 			klog.V(2).Infof("[%s] [reset] Resetting node", node.HostInfo.Host)
-			if err := resetKubeadm(node, apiDomainName); err != nil {
+			if err := resetkubeadmOnNode(node, apiDomainName); err != nil {
 				return fmt.Errorf("[%s] [reset] Failed to reset node: %v", node.HostInfo.Host, err)
 			}
 			klog.Infof("[%s] [reset] Successfully reset node", node.HostInfo.Host)
@@ -25,32 +30,29 @@ func ResetKubeadm(nodes []*rundata.Node, apiDomainName string) error {
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return g.Wait()
 }
 
-func resetKubeadm(node *rundata.Node, apiDomainName string) error {
+func resetkubeadmOnNode(node *rundata.Node, apiDomainName string) error {
 	if err := node.SSH.Run("yes | kubeadm reset"); err != nil {
 		return err
 	}
 
-	if err := node.SSH.Run(cmdtext.ResetHosts(apiDomainName)); err != nil {
-		return err
-	}
-	return nil
+	return node.SSH.Run(cmdtext.ResetHosts(apiDomainName))
 }
 
 func RemoveKubeComponente(nodes []*rundata.Node) error {
+	return removeKubeComponente(nodes)
+}
+
+func removeKubeComponente(nodes []*rundata.Node) error {
 	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(20)
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
 	for _, node := range nodes {
 		node := node
 		g.Go(func(ctx context.Context) error {
 			klog.V(2).Infof("[%s] [remove] remove the kubernetes component from the node", node.HostInfo.Host)
-			if err := removeKubeComponent(node); err != nil {
+			if err := removeKubeComponentOnNode(node); err != nil {
 				return fmt.Errorf("[%s] [remove] Failed to remove the kubernetes component: %v", node.HostInfo.Host, err)
 			}
 			klog.Infof("[%s] [remove] Successfully remove the kubernetes component from the node", node.HostInfo.Host)
@@ -58,29 +60,26 @@ func RemoveKubeComponente(nodes []*rundata.Node) error {
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return g.Wait()
 }
 
-func removeKubeComponent(node *rundata.Node) error {
+func removeKubeComponentOnNode(node *rundata.Node) error {
 	cmdText := cmdtext.NewKubeText(node.PackageManagementType)
-	if err := node.SSH.Run(cmdText.RemoveKubeComponent()); err != nil {
-		return err
-	}
-	return nil
+	return node.SSH.Run(cmdText.RemoveKubeComponent())
 }
 
 func RemoveContainerEngine(nodes []*rundata.Node) error {
+	return removeContainerEngine(nodes)
+}
+
+func removeContainerEngine(nodes []*rundata.Node) error {
 	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(20)
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
 	for _, node := range nodes {
 		node := node
 		g.Go(func(ctx context.Context) error {
 			klog.V(2).Infof("[%s] [remove] Remove container engine from the node", node.HostInfo.Host)
-			if err := removeContainerEngine(node); err != nil {
+			if err := removeContainerEngineOnNode(node); err != nil {
 				return fmt.Errorf("[%s] [remove] Failed to remove container engine: %v", node.HostInfo.Host, err)
 			}
 			klog.Infof("[%s] [remove] Successfully remove container engine", node.HostInfo.Host)
@@ -88,17 +87,10 @@ func RemoveContainerEngine(nodes []*rundata.Node) error {
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return g.Wait()
 }
 
-func removeContainerEngine(node *rundata.Node) error {
+func removeContainerEngineOnNode(node *rundata.Node) error {
 	cmdText := cmdtext.NewContainerEngineText(node.PackageManagementType)
-	if err := node.SSH.Run(cmdText.RemoveDocker()); err != nil {
-		return err
-	}
-	return nil
+	return node.SSH.Run(cmdText.RemoveDocker())
 }

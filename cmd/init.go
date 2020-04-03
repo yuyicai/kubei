@@ -95,32 +95,24 @@ func newInitOptions() *initOptions {
 
 func newInitData(cmd *cobra.Command, args []string, options *initOptions, out io.Writer) (*initData, error) {
 
-	kubeicfg := rundata.NewKubei()
-	kubeadmcfg := rundata.NewKubeadm()
+	kubeiCfg := rundata.NewKubei()
+	kubeadmCfg := rundata.NewKubeadm()
 
-	options.kubei.ApplyTo(kubeicfg)
-	options.kubeadm.ApplyTo(kubeadmcfg)
+	options.kubei.ApplyTo(kubeiCfg)
+	options.kubeadm.ApplyTo(kubeadmCfg)
 
-	rundata.DefaultKubeiConf(kubeicfg)
-	rundata.DefaultkubeadmConf(kubeadmcfg)
+	rundata.DefaultKubeiConf(kubeiCfg)
+	rundata.DefaultkubeadmConf(kubeadmCfg)
 
 	initDatacfg := &initData{
-		kubei:   kubeicfg,
-		kubeadm: kubeadmcfg,
+		kubei:   kubeiCfg,
+		kubeadm: kubeadmCfg,
 	}
 
 	return initDatacfg, nil
 }
 
-func (d *initData) Cluster() *rundata.ClusterNodes {
-	return &d.kubei.ClusterNodes
-}
-
-func (d *initData) ContainerEngine() *rundata.ContainerEngine {
-	return &d.kubei.ContainerEngine
-}
-
-func (d *initData) Cfg() *rundata.Kubei {
+func (d *initData) KubeiCfg() *rundata.Kubei {
 	return d.kubei
 }
 

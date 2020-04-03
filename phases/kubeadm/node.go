@@ -17,11 +17,11 @@ import (
 )
 
 //JoinNode join nodes
-func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
+func JoinNode(kubeiCfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 
 	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(20)
-	for _, node := range cfg.ClusterNodes.Worker {
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range kubeiCfg.ClusterNodes.Worker {
 		node := node
 		g.Go(func(ctx context.Context) error {
 
@@ -33,13 +33,13 @@ func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 				return err
 			}
 
-			if err := ha(node, cfg.ClusterNodes.GetAllMastersHost(), &cfg.Addons.HA, kubeadmCfg); err != nil {
+			if err := ha(node, kubeiCfg.ClusterNodes.GetAllMastersHost(), &kubeiCfg.HA, kubeadmCfg); err != nil {
 				return err
 			}
 
 			// join worker node
 			klog.Infof("[%s] [kubeadm] Joining worker nodes", node.HostInfo.Host)
-			if err := joinNode(node, kubeadmCfg); err != nil {
+			if err := joinNode(node, *kubeiCfg, *kubeadmCfg); err != nil {
 				return fmt.Errorf("[%s] Failed to join master worker : %v", node.HostInfo.Host, err)
 			}
 			klog.Infof("[%s] [kubeadm] Successfully joined worker nodes", node.HostInfo.Host)
@@ -48,11 +48,7 @@ func JoinNode(cfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return g.Wait()
 }
 
 func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubeadm) error {
@@ -60,9 +56,7 @@ func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubea
 
 	switch h.Type {
 	case constants.HATypeNone:
-		if err := system.SetHost(node, masters[0], apiDomainName); err != nil {
-			return err
-		}
+		return system.SetHost(node, masters[0], apiDomainName)
 	case constants.HATypeLocalSLB:
 		if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
 			return err
@@ -81,10 +75,10 @@ func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubea
 	return nil
 }
 
-func localSLB(masters []string, node *rundata.Node, l *rundata.LocalSLB, kcfg *rundata.Kubeadm) error {
-	switch l.Type {
+func localSLB(masters []string, node *rundata.Node, slb *rundata.LocalSLB, kubeadmCfg *rundata.Kubeadm) error {
+	switch slb.Type {
 	case constants.LocalSLBTypeNginx:
-		nginx(node, &l.Nginx, masters, kcfg)
+		return nginx(node, &slb.Nginx, masters, kubeadmCfg)
 	case constants.LocalSLBTypeHAproxy:
 		//TODO
 	}
@@ -123,16 +117,11 @@ func nginx(node *rundata.Node, n *rundata.Nginx, masters []string, kcfg *rundata
 		return err
 	}
 
-	if err := system.Restart("kubelet", node); err != nil {
-		return err
-	}
-
-	return nil
+	return system.Restart("kubelet", node)
 }
 
 func checkHealth(node *rundata.Node, url string, interval, timeout time.Duration) error {
-
-	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
+	return wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		var output []byte
 		output, _ = node.SSH.RunOut(fmt.Sprintf("curl -k %s", url))
 		if string(output) == "ok" {
@@ -140,11 +129,7 @@ func checkHealth(node *rundata.Node, url string, interval, timeout time.Duration
 		}
 
 		return false, nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	})
 }
 
 func iptables(node *rundata.Node) error {
@@ -155,15 +140,12 @@ func iptables(node *rundata.Node) error {
 	return nil
 }
 
-func joinNode(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
-	text, err := cmdtext.Kubeadm(cmdtext.JoinNode, node.Name, kubeadmCfg)
+func joinNode(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) error {
+	text, err := cmdtext.Kubeadm(cmdtext.JoinNode, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
 	if err != nil {
 		return err
 	}
-	if err := node.SSH.Run(text); err != nil {
-		return err
-	}
-	return nil
+	return node.SSH.Run(text)
 }
 
 func CheckNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, bool) {

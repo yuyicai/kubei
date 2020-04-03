@@ -13,7 +13,7 @@ import (
 
 func InstallKubeComponent(version string, nodes []*rundata.Node) error {
 	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(20)
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
 	for _, node := range nodes {
 		node := node
 		g.Go(func(ctx context.Context) error {
@@ -42,6 +42,7 @@ func installKubeComponent(version string, node *rundata.Node) error {
 		if err != nil {
 			return err
 		}
+
 		return node.SSH.Run(cmd)
 	}
 

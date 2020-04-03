@@ -40,18 +40,13 @@ func runKubeadm(c workflow.RunData) error {
 		return errors.New("reset phase invoked with an invalid rundata struct")
 	}
 
-	cfg := data.Cfg()
+	cfg := data.KubeiCfg()
 	kubeadmCfg := data.KubeadmCfg()
-	nodes := append(cfg.ClusterNodes.Masters, cfg.ClusterNodes.Worker...)
 
-	if err := preflight.Check(nodes, &cfg.JumpServer); err != nil {
+	if err := preflight.Check(cfg); err != nil {
 		return err
 	}
 
 	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-	if err := resetphases.ResetKubeadm(nodes, apiDomainName); err != nil {
-		return err
-	}
-
-	return nil
+	return resetphases.ResetKubeadm(cfg.ClusterNodes.GetAllNodes(), apiDomainName)
 }

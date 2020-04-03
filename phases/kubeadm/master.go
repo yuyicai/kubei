@@ -14,7 +14,7 @@ import (
 )
 
 // InitMaster init master0
-func InitMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
+func InitMaster(node *rundata.Node, kubeiCfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
 	if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
 		return err
@@ -30,7 +30,7 @@ func InitMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 
 	klog.Infof("[%s] [kubeadm-init] Initializing master0", node.HostInfo.Host)
 
-	output, err := initMaster(node, kubeadmCfg)
+	output, err := initMaster(node, *kubeiCfg, *kubeadmCfg)
 	if err != nil {
 		return err
 	}
@@ -42,14 +42,14 @@ func InitMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	klog.Infof("[%s] [kubeadm-init] Successfully initialized master0", node.HostInfo.Host)
 
 	klog.V(2).Infof("[%s] [token] Getting token from master init output", node.HostInfo.Host)
-	setToken(string(output), &kubeadmCfg.Token)
+	getToken(string(output), &kubeiCfg.Kubernetes.Token)
 
 	return nil
 
 }
 
-func initMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) ([]byte, error) {
-	text, err := cmdtext.Kubeadm(cmdtext.Init, node.Name, kubeadmCfg)
+func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) ([]byte, error) {
+	text, err := cmdtext.Kubeadm(cmdtext.Init, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
 	if err != nil {
 		return nil, fmt.Errorf("[%s] [kubeadm-init] Failed to Initialize master0: %v", node.HostInfo.Host, err)
 	}
@@ -62,10 +62,10 @@ func initMaster(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) ([]byte, error)
 }
 
 // JoinControlPlane join masters to ControlPlane
-func JoinControlPlane(masters []*rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
+func JoinControlPlane(masters []*rundata.Node, kubeiCfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
 	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(20)
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
 	for _, node := range masters[1:] {
 		node := node
 		g.Go(func(ctx context.Context) error {
@@ -83,7 +83,7 @@ func JoinControlPlane(masters []*rundata.Node, kubeadmCfg *rundata.Kubeadm) erro
 			}
 
 			klog.Infof("[%s] [kubeadm-join] Joining master nodes", node.HostInfo.Host)
-			if err := joinControlPlane(node, kubeadmCfg); err != nil {
+			if err := joinControlPlane(node, *kubeiCfg, *kubeadmCfg); err != nil {
 				return err
 			}
 			klog.Infof("[%s] [kubeadm-join] Successfully joined master nodes", node.HostInfo.Host)
@@ -92,24 +92,16 @@ func JoinControlPlane(masters []*rundata.Node, kubeadmCfg *rundata.Kubeadm) erro
 				return err
 			}
 
-			if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
-				return err
-			}
-
-			return nil
+			return system.SetHost(node, constants.LoopbackAddress, apiDomainName)
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return g.Wait()
 
 }
 
-func joinControlPlane(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
-	text, err := cmdtext.Kubeadm(cmdtext.JoinControlPlane, node.Name, kubeadmCfg)
+func joinControlPlane(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) error {
+	text, err := cmdtext.Kubeadm(cmdtext.JoinControlPlane, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
 	if err != nil {
 		return fmt.Errorf("[%s] [kubeadm-join] Failed to join master nodes: %v", node.HostInfo.Host, err)
 	}
@@ -121,8 +113,8 @@ func joinControlPlane(node *rundata.Node, kubeadmCfg *rundata.Kubeadm) error {
 	return nil
 }
 
-//setToken get token from kubeadm init output
-func setToken(str string, token *rundata.Token) {
+//getToken get token from kubeadm init output
+func getToken(str string, token *rundata.Token) {
 	if strSlice := strings.Split(str, "--token "); len(strSlice) > 1 {
 		token.Token = strSlice[1][:23]
 	}
