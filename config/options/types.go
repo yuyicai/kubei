@@ -13,7 +13,7 @@ type Kubei struct {
 	ContainerEngine ContainerEngine
 	Kubernetes      Kubernetes
 	JumpServer      map[string]string
-	Offline         bool
+	OfflineFile     string
 }
 
 type Kubernetes struct {

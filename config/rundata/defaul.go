@@ -2,39 +2,52 @@ package rundata
 
 import "github.com/yuyicai/kubei/config/constants"
 
-func DefaultkubeadmConf(k *Kubeadm) {
+func DefaultkubeadmCfg(k *Kubeadm) {
 	if k.LocalAPIEndpoint.BindPort == 0 {
 		k.LocalAPIEndpoint.BindPort = constants.DefaultAPIBindPort
 	}
 }
 
-func DefaultKubeiConf(k *Kubei) {
-	defaultAddonsConf(&k.Addons)
-	defaultContainerEngine(&k.ContainerEngine)
-	defaultNetworkPluginsConf(&k.NetworkPlugins)
-	defaultHAConf(&k.HA)
+func DefaultKubeiCfg(k *Kubei) {
+	addonsCfg(&k.Addons)
+	containerEngineCfg(&k.ContainerEngine)
+	networkPluginsCfg(&k.NetworkPlugins)
+	haCfg(&k.HA)
+	clusterNodesCfg(&k.ClusterNodes)
 }
 
-func defaultAddonsConf(a *Addons) {
+func addonsCfg(a *Addons) {
 }
 
-func defaultHAConf(h *HA) {
+func clusterNodesCfg(c *ClusterNodes) {
+	for _, node := range c.GetAllNodes() {
+		nodeCfg(node)
+	}
+}
+
+func nodeCfg(node *Node) {
+	if node.InstallType == "" {
+		node.InstallType = constants.InstallTypeOnline
+	}
+}
+
+func haCfg(h *HA) {
 	if h.Type == "" {
 		h.Type = constants.HATypeNone
 	}
 
-	defaultLocalSLBConf(&h.LocalSLB)
+	localSLBCfg(&h.LocalSLB)
 }
 
-func defaultNetworkPluginsConf(n *NetworkPlugins) {
+func networkPluginsCfg(n *NetworkPlugins) {
 	if n.Type == "" {
 		n.Type = constants.DefaulNetworkPlugin
 	}
 
-	defaultFlannelConf(&n.Flannel)
+	flannelCfg(&n.Flannel)
 }
 
-func defaultFlannelConf(f *Flannel) {
+func flannelCfg(f *Flannel) {
 	if f.BackendType == "" {
 		f.BackendType = constants.DefaultFlannelBackendType
 	}
@@ -52,15 +65,15 @@ func defaultFlannelConf(f *Flannel) {
 	}
 }
 
-func defaultLocalSLBConf(l *LocalSLB) {
+func localSLBCfg(l *LocalSLB) {
 	if l.Type == "" {
 		l.Type = constants.LocalSLBTypeNginx
 	}
 
-	defaultNginxConf(&l.Nginx)
+	nginxCfg(&l.Nginx)
 }
 
-func defaultNginxConf(n *Nginx) {
+func nginxCfg(n *Nginx) {
 	if n.Port == "" {
 		n.Port = constants.DefaultNginxPort
 	}
@@ -78,15 +91,15 @@ func defaultNginxConf(n *Nginx) {
 	}
 }
 
-func defaultContainerEngine(c *ContainerEngine) {
+func containerEngineCfg(c *ContainerEngine) {
 	if c.Type == "" {
 		c.Type = constants.ContainerEngineTypeDocker
 	}
 
-	defaultDocker(&c.Docker)
+	dockerCfg(&c.Docker)
 }
 
-func defaultDocker(d *Docker) {
+func dockerCfg(d *Docker) {
 	if d.CGroupDriver == "" {
 		d.CGroupDriver = constants.DefaultCGroupDriver
 	}

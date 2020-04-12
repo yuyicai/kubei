@@ -3,6 +3,7 @@ package preflight
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
@@ -49,8 +50,7 @@ func nodesCheck(cfg *rundata.Kubei) error {
 			if err := packageManagementTypeCheck(node); err != nil {
 				return err
 			}
-
-			return sendAndtar("", "", node)
+			return sendAndtar(path.Join("/tmp/.kubei", path.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
 		})
 	}
 
@@ -67,7 +67,6 @@ func sshCheck(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	var err error
 	userInfo := node.HostInfo
-
 	//Set up ssh connection through jump server
 	if jumpServer.HostInfo.Host != "" {
 		klog.Infof("[%s] [preflight] Checking SSH connection (through jump server %s)", userInfo.Host, jumpServer.HostInfo.Host)
@@ -109,11 +108,14 @@ func sendAndtar(dstFile, srcFile string, node *rundata.Node) error {
 		if err := sendFile(dstFile, srcFile, node); err != nil {
 			return err
 		}
-		klog.Infof("[%s] [send] send %s, ", node.HostInfo.Host, "dstFile")
-
-		return tar(dstFile, node)
+		klog.Infof("[%s] [send] send pkg to %s, ", node.HostInfo.Host, "dstFile")
+		if err := tar(dstFile, node); err != nil {
+			return err
+		}
+		node.IsSend = true
+		return nil
 	}
-	node.IsSend = true
+
 	return nil
 }
 
@@ -121,6 +123,6 @@ func sendFile(dstFile, srcFile string, node *rundata.Node) error {
 	return node.SSH.SendFile(dstFile, srcFile)
 }
 
-func tar(dstFile string, node *rundata.Node) error {
-	return node.SSH.Run(fmt.Sprintf("mkdir -p /tmp/.kube && tar xf %s -C /tmp/.kube", dstFile))
+func tar(file string, node *rundata.Node) error {
+	return node.SSH.Run(fmt.Sprintf("mkdir -p /tmp/.kubei && tar xf %s -C /tmp/.kubei", file))
 }

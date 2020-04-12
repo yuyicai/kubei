@@ -14,3 +14,5 @@
 kubei
 
 dist/
+
+test_*

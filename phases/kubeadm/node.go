@@ -168,3 +168,30 @@ func CheckNodesReady(node *rundata.Node, interval, timeout time.Duration) (strin
 
 	return str, true
 }
+
+func LoadOfflineImages(c rundata.ClusterNodes) error {
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range c.Masters {
+		node := node
+		g.Go(func(ctx context.Context) error {
+			return loadOfflineImagesOnnode("master", node)
+		})
+	}
+
+	for _, node := range c.Worker {
+		node := node
+		g.Go(func(ctx context.Context) error {
+			return loadOfflineImagesOnnode("node", node)
+		})
+	}
+
+	return g.Wait()
+}
+
+func loadOfflineImagesOnnode(nodeType string, node *rundata.Node) error {
+	if node.InstallType == constants.InstallTypeOffline {
+		return node.SSH.Run(fmt.Sprintf("sh /tmp/.kubei/images/%s.sh", nodeType))
+	}
+	return nil
+}

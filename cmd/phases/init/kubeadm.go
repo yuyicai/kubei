@@ -59,6 +59,10 @@ func runKubeadm(c workflow.RunData) error {
 		return err
 	}
 
+	if err := kubeadmphases.LoadOfflineImages(kubeiCfg.ClusterNodes); err != nil {
+		return err
+	}
+
 	// init master0
 	masters := kubeiCfg.ClusterNodes.Masters
 	masters0 := masters[0]

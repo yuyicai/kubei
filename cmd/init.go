@@ -81,6 +81,7 @@ func addInitConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
 	options.AddPublicUserInfoConfigFlags(flagSet, &k.ClusterNodes.PublicHostInfo)
 	options.AddKubeClusterNodesConfigFlags(flagSet, &k.ClusterNodes)
 	options.AddJumpServerFlags(flagSet, &k.JumpServer)
+	options.AddOfflinePackageFlags(flagSet, &k.OfflineFile)
 }
 
 func newInitOptions() *initOptions {
@@ -101,8 +102,8 @@ func newInitData(cmd *cobra.Command, args []string, options *initOptions, out io
 	options.kubei.ApplyTo(kubeiCfg)
 	options.kubeadm.ApplyTo(kubeadmCfg)
 
-	rundata.DefaultKubeiConf(kubeiCfg)
-	rundata.DefaultkubeadmConf(kubeadmCfg)
+	rundata.DefaultKubeiCfg(kubeiCfg)
+	rundata.DefaultkubeadmCfg(kubeadmCfg)
 
 	initDatacfg := &initData{
 		kubei:   kubeiCfg,

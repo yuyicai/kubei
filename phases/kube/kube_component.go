@@ -38,7 +38,7 @@ func installKubeComponent(version string, node *rundata.Node) error {
 	switch node.InstallType {
 	case constants.InstallTypeOnline:
 		cmdText := cmdtext.NewKubeText(node.PackageManagementType)
-		cmd, err := cmdText.KubeComponent(version)
+		cmd, err := cmdText.KubeComponent(version, node.InstallType)
 		if err != nil {
 			return err
 		}

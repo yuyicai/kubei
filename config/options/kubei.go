@@ -1,6 +1,7 @@
 package options
 
 import (
+	"github.com/yuyicai/kubei/config/constants"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -10,9 +11,8 @@ import (
 
 func (c *ClusterNodes) ApplyTo(data *rundata.ClusterNodes) {
 
-	setNodesHost(c.Masters, &data.Masters)
-	setNodesHost(c.Workers, &data.Worker)
-
+	setNodesHost(&data.Masters, c.Masters)
+	setNodesHost(&data.Worker, c.Workers)
 	nodes := append(data.Masters, data.Worker...)
 
 	for _, v := range nodes {
@@ -67,9 +67,14 @@ func (k *Kubei) ApplyTo(data *rundata.Kubei) {
 			klog.Fatal(err)
 		}
 	}
+
+	if k.OfflineFile != "" {
+		data.OfflineFile = k.OfflineFile
+		setNodesInstallType(append(data.ClusterNodes.Worker, data.ClusterNodes.Worker...))
+	}
 }
 
-func setNodesHost(optionsNodes []string, nodes *[]*rundata.Node) {
+func setNodesHost(nodes *[]*rundata.Node, optionsNodes []string) {
 	if len(optionsNodes) > 0 {
 		for _, v := range optionsNodes {
 			v = strings.Replace(v, " ", "", -1)
@@ -81,5 +86,11 @@ func setNodesHost(optionsNodes []string, nodes *[]*rundata.Node) {
 			}
 			*nodes = append(*nodes, node)
 		}
+	}
+}
+
+func setNodesInstallType(nodes []*rundata.Node) {
+	for _, node := range nodes {
+		node.InstallType = constants.InstallTypeOffline
 	}
 }

@@ -20,6 +20,7 @@ type Kubei struct {
 	Install         Install
 	Reset           Reset
 	Addons          Addons
+	OfflineFile     string
 }
 
 type JumpServer struct {
