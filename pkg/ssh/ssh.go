@@ -12,6 +12,7 @@ import (
 	"k8s.io/klog"
 	"net"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -203,7 +204,11 @@ func (c *Client) SendFile(dstFile, srcFile string) error {
 	if err != nil {
 		return fmt.Errorf("unable to start sftp subsytem: %v", err)
 	}
-	defer c.Close()
+
+	err = sc.MkdirAll(path.Dir(dstFile))
+	if err != nil {
+		return err
+	}
 
 	w, err := sc.Create(dstFile)
 	if err != nil {

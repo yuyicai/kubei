@@ -22,6 +22,7 @@ func NewKubeComponentPhase() workflow.Phase {
 
 func getKubeComponentPhaseFlags() []string {
 	flags := []string{
+		options.OfflineFile,
 		options.JumpServer,
 		options.KubernetesVersion,
 		options.Masters,

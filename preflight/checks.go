@@ -108,9 +108,9 @@ func sendAndtar(dstFile, srcFile string, node *rundata.Node) error {
 		if err := sendFile(dstFile, srcFile, node); err != nil {
 			return err
 		}
-		klog.Infof("[%s] [send] send pkg to %s, ", node.HostInfo.Host, "dstFile")
+		klog.Infof("[%s] [send] send pkg to %s, ", node.HostInfo.Host, dstFile)
 		if err := tar(dstFile, node); err != nil {
-			return err
+			return fmt.Errorf("[%s] [tar] failed to Decompress the file %s: %v", node.HostInfo.Host, dstFile, err)
 		}
 		node.IsSend = true
 		return nil
@@ -124,5 +124,5 @@ func sendFile(dstFile, srcFile string, node *rundata.Node) error {
 }
 
 func tar(file string, node *rundata.Node) error {
-	return node.SSH.Run(fmt.Sprintf("mkdir -p /tmp/.kubei && tar xf %s -C /tmp/.kubei", file))
+	return node.SSH.Run(fmt.Sprintf("tar xf %s -C /tmp/.kubei", file))
 }

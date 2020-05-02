@@ -27,6 +27,7 @@ func NewKubeadmPhase() workflow.Phase {
 
 func getKubeadmPhaseFlags() []string {
 	flags := []string{
+		options.OfflineFile,
 		options.JumpServer,
 		options.ControlPlaneEndpoint,
 		options.ImageRepository,

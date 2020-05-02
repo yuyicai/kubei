@@ -22,6 +22,7 @@ func NewContainerEnginePhase() workflow.Phase {
 
 func getContainerEnginePhaseFlags() []string {
 	flags := []string{
+		options.OfflineFile,
 		options.JumpServer,
 		options.ContainerEngineVersion,
 		options.Masters,
