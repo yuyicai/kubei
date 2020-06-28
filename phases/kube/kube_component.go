@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	cmdtext "github.com/yuyicai/kubei/cmd/text"
+	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
@@ -35,16 +35,13 @@ func InstallKubeComponent(version string, nodes []*rundata.Node) error {
 }
 
 func installKubeComponent(version string, node *rundata.Node) error {
-	switch node.InstallType {
-	case constants.InstallTypeOnline:
-		cmdText := cmdtext.NewKubeText(node.PackageManagementType)
-		cmd, err := cmdText.KubeComponent(version, node.InstallType)
-		if err != nil {
-			return err
-		}
 
-		return node.SSH.Run(cmd)
+	cmdTmpl := tmpl.NewKubeText(node.PackageManagementType)
+	cmd, err := cmdTmpl.KubeComponent(version, node.InstallType)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return node.SSH.Run(cmd)
+
 }

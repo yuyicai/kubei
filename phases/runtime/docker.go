@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	cmdtext "github.com/yuyicai/kubei/cmd/text"
+	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
@@ -35,8 +35,8 @@ func InstallDocker(nodes []*rundata.Node, d rundata.Docker) error {
 }
 
 func installDocker(node *rundata.Node, d rundata.Docker) error {
-	cmdText := cmdtext.NewContainerEngineText(node.PackageManagementType)
-	cmd, err := cmdText.Docker(node.InstallType, d)
+	cmdTmpl := tmpl.NewContainerEngineText(node.PackageManagementType)
+	cmd, err := cmdTmpl.Docker(node.InstallType, d)
 	if err != nil {
 		return err
 	}

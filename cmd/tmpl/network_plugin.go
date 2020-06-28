@@ -1,4 +1,4 @@
-package text
+package tmpl
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ func Flannel(network, image, backendType string) (string, error) {
 		"backendType": backendType,
 	}
 
-	cmdText := dedent.Dedent(`
+	cmdTmpl := dedent.Dedent(`
         cat <<EOF | kubectl apply -f -
         ---
         apiVersion: policy/v1beta1
@@ -244,7 +244,7 @@ func Flannel(network, image, backendType string) (string, error) {
         EOF
 	`)
 
-	t, err := template.New("text").Parse(cmdText)
+	t, err := template.New("text").Parse(cmdTmpl)
 	if err != nil {
 		return "", err
 	}

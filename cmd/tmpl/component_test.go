@@ -1,4 +1,4 @@
-package text
+package tmpl
 
 import (
 	"github.com/lithammer/dedent"

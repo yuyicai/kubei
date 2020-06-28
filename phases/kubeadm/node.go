@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	cmdtext "github.com/yuyicai/kubei/cmd/text"
+	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
@@ -86,7 +86,7 @@ func localSLB(masters []string, node *rundata.Node, slb *rundata.LocalSLB, kubea
 }
 
 func nginx(node *rundata.Node, n *rundata.Nginx, masters []string, kcfg *rundata.Kubeadm) error {
-	text, err := cmdtext.NginxConf(masters, n.Port, strconv.FormatInt(int64(kcfg.LocalAPIEndpoint.BindPort), 10))
+	text, err := tmpl.NginxConf(masters, n.Port, strconv.FormatInt(int64(kcfg.LocalAPIEndpoint.BindPort), 10))
 	if err != nil {
 		return err
 	}
@@ -94,11 +94,11 @@ func nginx(node *rundata.Node, n *rundata.Nginx, masters []string, kcfg *rundata
 		return err
 	}
 
-	if err := node.SSH.Run(cmdtext.NginxManifest(n.Image.GetImage())); err != nil {
+	if err := node.SSH.Run(tmpl.NginxManifest(n.Image.GetImage())); err != nil {
 		return err
 	}
 
-	if err := node.SSH.Run(cmdtext.KubeletUnitFile(fmt.Sprintf("%s/%s", kcfg.ImageRepository, "pause:3.1"))); err != nil {
+	if err := node.SSH.Run(tmpl.KubeletUnitFile(fmt.Sprintf("%s/%s", kcfg.ImageRepository, "pause:3.1"))); err != nil {
 		return err
 	}
 
@@ -113,7 +113,7 @@ func nginx(node *rundata.Node, n *rundata.Nginx, masters []string, kcfg *rundata
 		return err
 	}
 
-	if err := node.SSH.Run(cmdtext.RemoveKubeletUnitFile()); err != nil {
+	if err := node.SSH.Run(tmpl.RemoveKubeletUnitFile()); err != nil {
 		return err
 	}
 
@@ -134,14 +134,14 @@ func checkHealth(node *rundata.Node, url string, interval, timeout time.Duration
 
 func iptables(node *rundata.Node) error {
 	klog.V(2).Infof("[%s] [iptables] set up iptables", node.HostInfo.Host)
-	if err := node.SSH.Run(cmdtext.Iptables()); err != nil {
+	if err := node.SSH.Run(tmpl.Iptables()); err != nil {
 		return fmt.Errorf("[%s] [iptables] Failed set up iptables: %v", node.HostInfo.Host, err)
 	}
 	return nil
 }
 
 func joinNode(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) error {
-	text, err := cmdtext.Kubeadm(cmdtext.JoinNode, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
+	text, err := tmpl.Kubeadm(tmpl.JoinNode, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
 	if err != nil {
 		return err
 	}

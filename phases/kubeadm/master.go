@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	cmdtext "github.com/yuyicai/kubei/cmd/text"
+	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
@@ -49,7 +49,7 @@ func InitMaster(node *rundata.Node, kubeiCfg *rundata.Kubei, kubeadmCfg *rundata
 }
 
 func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) ([]byte, error) {
-	text, err := cmdtext.Kubeadm(cmdtext.Init, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
+	text, err := tmpl.Kubeadm(tmpl.Init, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
 	if err != nil {
 		return nil, fmt.Errorf("[%s] [kubeadm-init] Failed to Initialize master0: %v", node.HostInfo.Host, err)
 	}
@@ -101,7 +101,7 @@ func JoinControlPlane(masters []*rundata.Node, kubeiCfg *rundata.Kubei, kubeadmC
 }
 
 func joinControlPlane(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) error {
-	text, err := cmdtext.Kubeadm(cmdtext.JoinControlPlane, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
+	text, err := tmpl.Kubeadm(tmpl.JoinControlPlane, node.Name, kubeiCfg.Kubernetes, kubeadmCfg)
 	if err != nil {
 		return fmt.Errorf("[%s] [kubeadm-join] Failed to join master nodes: %v", node.HostInfo.Host, err)
 	}
@@ -130,13 +130,13 @@ func getToken(str string, token *rundata.Token) {
 
 func copyAdminConfig(node *rundata.Node) error {
 	klog.V(2).Infof("[%s] [kubectl-config] Copy admin.conf to $HOME/.kube/config", node.HostInfo.Host)
-	if err := node.SSH.Run(cmdtext.CopyAdminConfig()); err != nil {
+	if err := node.SSH.Run(tmpl.CopyAdminConfig()); err != nil {
 		return fmt.Errorf("[%s] [kubectl-config] Failed to copy admin.conf to $HOME/.kube/config: %v", node.HostInfo.Host, err)
 	}
 
 	if node.HostInfo.User != "root" {
 		klog.V(2).Infof("[%s] [kubectl-config] Chown $HOME/.kube/config to user %s", node.HostInfo.Host, node.HostInfo.User)
-		if err := node.SSH.Run(cmdtext.ChownKubectlConfig()); err != nil {
+		if err := node.SSH.Run(tmpl.ChownKubectlConfig()); err != nil {
 			return fmt.Errorf("[%s] [kubectl-config] Failed to chown $HOME/.kube/config to user %s: %v", node.HostInfo.Host, node.HostInfo.User, err)
 		}
 	}

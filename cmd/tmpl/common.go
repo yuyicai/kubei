@@ -1,4 +1,4 @@
-package text
+package tmpl
 
 import (
 	"fmt"
@@ -6,23 +6,23 @@ import (
 )
 
 func Restart(name string) string {
-	cmdText := dedent.Dedent(`
+	cmdTmpl := dedent.Dedent(`
         systemctl daemon-reload && systemctl enable %s && systemctl restart %s`)
-	return fmt.Sprintf(cmdText, name, name)
+	return fmt.Sprintf(cmdTmpl, name, name)
 }
 
 func SetHosts(ip, apiDomainName string) string {
-	cmdText := dedent.Dedent(`
+	cmdTmpl := dedent.Dedent(`
         sed -i '/%s/d' /etc/hosts
         cat <<EOF | tee -a /etc/hosts
         %s %s
         EOF`)
-	return fmt.Sprintf(cmdText, apiDomainName, ip, apiDomainName)
+	return fmt.Sprintf(cmdTmpl, apiDomainName, ip, apiDomainName)
 }
 
 func ChangeHosts(ip, apiDomainName string) string {
-	cmdText := "sed -i '/%s/c %s %s' /etc/hosts"
-	return fmt.Sprintf(cmdText, apiDomainName, ip, apiDomainName)
+	cmdTmpl := "sed -i '/%s/c %s %s' /etc/hosts"
+	return fmt.Sprintf(cmdTmpl, apiDomainName, ip, apiDomainName)
 }
 
 func SwapOff() string {

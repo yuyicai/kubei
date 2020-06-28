@@ -1,4 +1,4 @@
-package text
+package tmpl
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 )
 
 func KubeletUnitFile(image string) string {
-	cmdText := dedent.Dedent(`
+	cmdTmpl := dedent.Dedent(`
         cgroupDriver=$(docker info --format '{{json .CgroupDriver}}' | sed 's/"//g')
         mkdir -p /etc/systemd/system/kubelet.service.d
         cat << EOF | tee /etc/systemd/system/kubelet.service.d/20-ha-service-manager.conf
@@ -19,12 +19,12 @@ func KubeletUnitFile(image string) string {
         EOF
 	`)
 
-	return fmt.Sprintf(cmdText, image)
+	return fmt.Sprintf(cmdTmpl, image)
 }
 
 func RemoveKubeletUnitFile() string {
-	cmdText := "rm -f /etc/systemd/system/kubelet.service.d/20-ha-service-manager.conf"
-	return cmdText
+	cmdTmpl := "rm -f /etc/systemd/system/kubelet.service.d/20-ha-service-manager.conf"
+	return cmdTmpl
 }
 
 func NginxConf(masters []string, nginxPort, masterPort string) (string, error) {
@@ -34,7 +34,7 @@ func NginxConf(masters []string, nginxPort, masterPort string) (string, error) {
 		"masterPort": masterPort,
 	}
 
-	cmdText := dedent.Dedent(`
+	cmdTmpl := dedent.Dedent(`
         mkdir -p /etc/kubernetes
         cat <<EOF | tee /etc/kubernetes/nginx.conf
         error_log stderr notice;
@@ -80,7 +80,7 @@ func NginxConf(masters []string, nginxPort, masterPort string) (string, error) {
         EOF
 	`)
 
-	t, err := template.New("text").Parse(cmdText)
+	t, err := template.New("text").Parse(cmdTmpl)
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +95,7 @@ func NginxConf(masters []string, nginxPort, masterPort string) (string, error) {
 }
 
 func NginxManifest(nginxImage string) string {
-	cmdText := dedent.Dedent(`
+	cmdTmpl := dedent.Dedent(`
         mkdir -p /etc/kubernetes/manifests
         cat <<EOF | tee /etc/kubernetes/manifests/nginx-proxy.yml
         apiVersion: v1
@@ -133,5 +133,5 @@ func NginxManifest(nginxImage string) string {
               type: FileOrCreate
         EOF
 	`)
-	return fmt.Sprintf(cmdText, nginxImage)
+	return fmt.Sprintf(cmdTmpl, nginxImage)
 }
