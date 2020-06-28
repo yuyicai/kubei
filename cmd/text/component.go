@@ -31,10 +31,11 @@ func (Apt) Docker(installTyped string, d rundata.Docker) (string, error) {
 	}
 	t, err := template.New("text").Parse(dedent.Dedent(`
 		{{ define "config" }}
+		mkdir -p /etc/docker/ || true
 		cat <<EOF | tee /etc/docker/daemon.json
 		{
 		  "registry-mirrors": [
-		      "https://dockerhub.azk8s.cn",
+		      "https://dockerhub.mirrors.nwafu.edu.cn/",
 		      "https://hub-mirror.c.163.com"
 		  ],
 		{{- if eq .cgroupDriver "systemd" }}
@@ -47,7 +48,7 @@ func (Apt) Docker(installTyped string, d rundata.Docker) (string, error) {
 		  "storage-driver": "{{ .storageDriver }}"
 		}
 		EOF
-		mkdir -p /etc/systemd/system/docker.service.d
+		mkdir -p /etc/systemd/system/docker.service.d || true
 		{{ end }}
 		{{ define "online" }}
 		apt-get update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get -y install -qq apt-transport-https ca-certificates curl
@@ -170,11 +171,11 @@ func (Yum) Docker(installType string, d rundata.Docker) (string, error) {
 	}
 	t, err := template.New("text").Parse(dedent.Dedent(`
 		{{ define "config" }}
-		mkdir -p /etc/docker
+		mkdir -p /etc/docker/ || true
 		cat <<EOF | tee /etc/docker/daemon.json
 		{
 		  "registry-mirrors": [
-		      "https://dockerhub.azk8s.cn",
+		      "https://dockerhub.mirrors.nwafu.edu.cn/",
 		      "https://hub-mirror.c.163.com"
 		  ],
 		{{- if eq .cgroupDriver "systemd" }}

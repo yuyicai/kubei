@@ -179,7 +179,7 @@ func LoadOfflineImages(c rundata.ClusterNodes) error {
 		})
 	}
 
-	for _, node := range c.Worker {
+	for _, node := range c.GetAllNodes() {
 		node := node
 		g.Go(func(ctx context.Context) error {
 			return loadOfflineImagesOnnode("node", node)

@@ -18,7 +18,7 @@ const (
 	ContainerEngineTypeDocker     = "docker"
 	ContainerEngineTypeContainerd = "containerd"
 	ContainerEngineTypeCRIO       = "cri-o"
-	RegistryMirrors               = "https://dockerhub.azk8s.cn"
+	RegistryMirrors               = "https://dockerhub.mirrors.nwafu.edu.cn/"
 	DefaultCGroupDriver           = "systemd"
 	DefaultLogDriver              = "json-file"
 	DefaultLogOptsMaxSize         = "500m"
@@ -35,7 +35,7 @@ const (
 
 	// networking plugin
 	DefaulNetworkPlugin           = "flannel"
-	DefaultFlannelImageRepository = "quay.azk8s.cn/coreos"
+	DefaultFlannelImageRepository = "quay.io/coreos"
 	DefaultFlannelImageName       = "flannel"
 	DefaultFlannelVersion         = "v0.11.0-amd64"
 	DefaultFlannelBackendType     = "vxlan"

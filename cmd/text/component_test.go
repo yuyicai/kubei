@@ -42,7 +42,7 @@ func TestApt_Docker(t *testing.T) {
 				cat <<EOF | tee /etc/docker/daemon.json
 				{
 				  "registry-mirrors": [
-				      "https://dockerhub.azk8s.cn",
+				      "https://dockerhub.mirrors.nwafu.edu.cn/",
 				      "https://hub-mirror.c.163.com"
 				  ],
 				  "exec-opts": ["native.cgroupdriver=systemd"],
@@ -79,7 +79,7 @@ func TestApt_Docker(t *testing.T) {
 				cat <<EOF | tee /etc/docker/daemon.json
 				{
 				  "registry-mirrors": [
-				      "https://dockerhub.azk8s.cn",
+				      "https://dockerhub.mirrors.nwafu.edu.cn/",
 				      "https://hub-mirror.c.163.com"
 				  ],
 				  "exec-opts": ["native.cgroupdriver=systemd"],
@@ -109,7 +109,7 @@ func TestApt_Docker(t *testing.T) {
 				cat <<EOF | tee /etc/docker/daemon.json
 				{
 				  "registry-mirrors": [
-				      "https://dockerhub.azk8s.cn",
+				      "https://dockerhub.mirrors.nwafu.edu.cn/",
 				      "https://hub-mirror.c.163.com"
 				  ],
 				  "exec-opts": ["native.cgroupdriver=systemd"],
@@ -173,7 +173,7 @@ func TestYum_Docker(t *testing.T) {
 				cat <<EOF | tee /etc/docker/daemon.json
 				{
 				  "registry-mirrors": [
-				      "https://dockerhub.azk8s.cn",
+				      "https://dockerhub.mirrors.nwafu.edu.cn/",
 				      "https://hub-mirror.c.163.com"
 				  ],
 				  "exec-opts": ["native.cgroupdriver=systemd"],
@@ -211,7 +211,7 @@ func TestYum_Docker(t *testing.T) {
 				cat <<EOF | tee /etc/docker/daemon.json
 				{
 				  "registry-mirrors": [
-				      "https://dockerhub.azk8s.cn",
+				      "https://dockerhub.mirrors.nwafu.edu.cn/",
 				      "https://hub-mirror.c.163.com"
 				  ],
 				  "exec-opts": ["native.cgroupdriver=systemd"],
@@ -245,7 +245,7 @@ func TestYum_Docker(t *testing.T) {
 				cat <<EOF | tee /etc/docker/daemon.json
 				{
 				  "registry-mirrors": [
-				      "https://dockerhub.azk8s.cn",
+				      "https://dockerhub.mirrors.nwafu.edu.cn/",
 				      "https://hub-mirror.c.163.com"
 				  ],
 				  "exec-opts": ["native.cgroupdriver=systemd"],

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
@@ -50,7 +51,7 @@ func nodesCheck(cfg *rundata.Kubei) error {
 			if err := packageManagementTypeCheck(node); err != nil {
 				return err
 			}
-			return sendAndtar(path.Join("/tmp/.kubei", path.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
+			return sendAndtar(path.Join("/tmp/.kubei", filepath.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
 		})
 	}
 
@@ -91,6 +92,9 @@ func packageManagementTypeCheck(node *rundata.Node) error {
 
 	outputStr := string(output)
 	switch true {
+	case strings.Contains(outputStr, "Debian"):
+		klog.V(5).Infof("[%s] [preflight] The package management is \"apt\"", hostInfo.Host)
+		node.PackageManagementType = constants.PackageManagementTypeApt
 	case strings.Contains(outputStr, "Ubuntu"):
 		klog.V(5).Infof("[%s] [preflight] The package management is \"apt\"", hostInfo.Host)
 		node.PackageManagementType = constants.PackageManagementTypeApt
