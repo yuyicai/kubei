@@ -134,7 +134,7 @@ func (Apt) KubeComponent(version, installType string) (string, error) {
 		apt-mark hold kubelet kubeadm kubectl
 		{{ end }}
 		{{ define "offline" }}
-		sh /tmp/.kubei/kubernetes/default.sh
+		sh /tmp/.kubei/kube/default.sh
 		{{ end }}
 	`))
 	if err != nil {
@@ -281,7 +281,7 @@ func (Yum) KubeComponent(version, installType string) (string, error) {
 		{{ end }}
 		{{ define "offline" }}
 		{{- template "selinux" . }}
-		sh /tmp/.kubei/kubernetes/default.sh
+		sh /tmp/.kubei/kube/default.sh
 		{{ end }}
 	`))
 	if err != nil {

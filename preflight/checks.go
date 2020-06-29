@@ -15,13 +15,34 @@ import (
 	"github.com/yuyicai/kubei/pkg/ssh"
 )
 
-func Check(cfg *rundata.Kubei) error {
+func Prepare(cfg *rundata.Kubei) error {
 
+	if err := check(cfg); err != nil {
+		return err
+	}
+
+	return send(cfg)
+}
+
+func check(cfg *rundata.Kubei) error {
 	if err := jumpServerCheck(&cfg.JumpServer); err != nil {
 		return fmt.Errorf("[preflight] Failed to set jump server: %v", err)
 	}
 
 	return nodesCheck(cfg)
+}
+
+func send(cfg *rundata.Kubei) error {
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range cfg.ClusterNodes.GetAllNodes() {
+		node := node
+		g.Go(func(ctx context.Context) error {
+			return sendAndtar(path.Join("/tmp/.kubei", filepath.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
+		})
+	}
+
+	return g.Wait()
 }
 
 func jumpServerCheck(jumpServer *rundata.JumpServer) error {
@@ -85,7 +106,7 @@ func packageManagementTypeCheck(node *rundata.Node) error {
 	hostInfo := node.HostInfo
 
 	klog.V(2).Infof("[%s] [preflight] Checking package management", hostInfo.Host)
-	output, err := node.SSH.RunOut("cat /proc/version")
+	output, err := node.RunOut("cat /proc/version")
 	if err != nil {
 		return err
 	}
@@ -128,5 +149,5 @@ func sendFile(dstFile, srcFile string, node *rundata.Node) error {
 }
 
 func tar(file string, node *rundata.Node) error {
-	return node.SSH.Run(fmt.Sprintf("tar xf %s -C /tmp/.kubei", file))
+	return node.Run(fmt.Sprintf("tar xf %s -C /tmp/.kubei", file))
 }

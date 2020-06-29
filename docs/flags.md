@@ -51,9 +51,9 @@
     apiserver.k8s.local会被写到/etc/hosts,解析到127.0.0.1
     一般不需要更改这个地址
 
---image-repository string           Choose a container registry to pull control plane images from (default "gcr.azk8s.cn/google_containers")
+--image-repository string           Choose a container registry to pull control plane images from (default "k8s.gcr.io")
     集群相关容器镜像仓库地址，从这个地址拉去的容器包括
-    默认：gcr.azk8s.cn/google_containers
+    默认：k8s.gcr.io
 
 --pod-network-cidr string           Specify range of IP addresses for the pod network. If set, the control plane will automatically allocate CIDRs for every node. (default "10.244.0.0/16")
     k8s集群中pod的ip地址范围，一般不用更改

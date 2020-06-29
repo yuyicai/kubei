@@ -12,8 +12,8 @@ import (
 func (c *ClusterNodes) ApplyTo(data *rundata.ClusterNodes) {
 
 	setNodesHost(&data.Masters, c.Masters)
-	setNodesHost(&data.Worker, c.Workers)
-	nodes := append(data.Masters, data.Worker...)
+	setNodesHost(&data.Workers, c.Workers)
+	nodes := append(data.Masters, data.Workers...)
 
 	for _, v := range nodes {
 		if v.HostInfo.Password == "" && c.PublicHostInfo.Password != "" {

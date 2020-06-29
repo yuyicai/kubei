@@ -56,7 +56,7 @@ func runKubeadm(c workflow.RunData) error {
 		return errors.New("You host to set the master nodes by the flag --masters")
 	}
 
-	if err := preflight.Check(kubeiCfg); err != nil {
+	if err := preflight.Prepare(kubeiCfg); err != nil {
 		return err
 	}
 

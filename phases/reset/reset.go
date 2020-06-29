@@ -6,8 +6,8 @@ import (
 	"github.com/yuyicai/kubei/config/constants"
 
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/tmpl"
 	"k8s.io/klog"
 )
 
@@ -34,11 +34,11 @@ func resetKubeadm(nodes []*rundata.Node, apiDomainName string) error {
 }
 
 func resetkubeadmOnNode(node *rundata.Node, apiDomainName string) error {
-	if err := node.SSH.Run("yes | kubeadm reset"); err != nil {
+	if err := node.Run("yes | kubeadm reset"); err != nil {
 		return err
 	}
 
-	return node.SSH.Run(tmpl.ResetHosts(apiDomainName))
+	return node.Run(tmpl.ResetHosts(apiDomainName))
 }
 
 func RemoveKubeComponente(nodes []*rundata.Node) error {
@@ -65,7 +65,7 @@ func removeKubeComponente(nodes []*rundata.Node) error {
 
 func removeKubeComponentOnNode(node *rundata.Node) error {
 	cmdTmpl := tmpl.NewKubeText(node.PackageManagementType)
-	return node.SSH.Run(cmdTmpl.RemoveKubeComponent())
+	return node.Run(cmdTmpl.RemoveKubeComponent())
 }
 
 func RemoveContainerEngine(nodes []*rundata.Node) error {
@@ -92,5 +92,5 @@ func removeContainerEngine(nodes []*rundata.Node) error {
 
 func removeContainerEngineOnNode(node *rundata.Node) error {
 	cmdTmpl := tmpl.NewContainerEngineText(node.PackageManagementType)
-	return node.SSH.Run(cmdTmpl.RemoveDocker())
+	return node.Run(cmdTmpl.RemoveDocker())
 }

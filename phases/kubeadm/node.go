@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
+	"github.com/yuyicai/kubei/tmpl"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"net"
@@ -21,7 +21,7 @@ func JoinNode(kubeiCfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
 
 	g := errgroup.WithCancel(context.Background())
 	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
-	for _, node := range kubeiCfg.ClusterNodes.Worker {
+	for _, node := range kubeiCfg.ClusterNodes.Workers {
 		node := node
 		g.Go(func(ctx context.Context) error {
 
@@ -90,15 +90,15 @@ func nginx(node *rundata.Node, n *rundata.Nginx, masters []string, kcfg *rundata
 	if err != nil {
 		return err
 	}
-	if err := node.SSH.Run(text); err != nil {
+	if err := node.Run(text); err != nil {
 		return err
 	}
 
-	if err := node.SSH.Run(tmpl.NginxManifest(n.Image.GetImage())); err != nil {
+	if err := node.Run(tmpl.NginxManifest(n.Image.GetImage())); err != nil {
 		return err
 	}
 
-	if err := node.SSH.Run(tmpl.KubeletUnitFile(fmt.Sprintf("%s/%s", kcfg.ImageRepository, "pause:3.1"))); err != nil {
+	if err := node.Run(tmpl.KubeletUnitFile(fmt.Sprintf("%s/%s", kcfg.ImageRepository, "pause:3.1"))); err != nil {
 		return err
 	}
 
@@ -113,7 +113,7 @@ func nginx(node *rundata.Node, n *rundata.Nginx, masters []string, kcfg *rundata
 		return err
 	}
 
-	if err := node.SSH.Run(tmpl.RemoveKubeletUnitFile()); err != nil {
+	if err := node.Run(tmpl.RemoveKubeletUnitFile()); err != nil {
 		return err
 	}
 
@@ -123,7 +123,7 @@ func nginx(node *rundata.Node, n *rundata.Nginx, masters []string, kcfg *rundata
 func checkHealth(node *rundata.Node, url string, interval, timeout time.Duration) error {
 	return wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		var output []byte
-		output, _ = node.SSH.RunOut(fmt.Sprintf("curl -k %s", url))
+		output, _ = node.RunOut(fmt.Sprintf("curl -k %s", url))
 		if string(output) == "ok" {
 			return true, nil
 		}
@@ -134,7 +134,7 @@ func checkHealth(node *rundata.Node, url string, interval, timeout time.Duration
 
 func iptables(node *rundata.Node) error {
 	klog.V(2).Infof("[%s] [iptables] set up iptables", node.HostInfo.Host)
-	if err := node.SSH.Run(tmpl.Iptables()); err != nil {
+	if err := node.Run(tmpl.Iptables()); err != nil {
 		return fmt.Errorf("[%s] [iptables] Failed set up iptables: %v", node.HostInfo.Host, err)
 	}
 	return nil
@@ -145,7 +145,7 @@ func joinNode(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kub
 	if err != nil {
 		return err
 	}
-	return node.SSH.Run(text)
+	return node.Run(text)
 }
 
 func CheckNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, bool) {
@@ -153,7 +153,7 @@ func CheckNodesReady(node *rundata.Node, interval, timeout time.Duration) (strin
 	klog.Infof("[check] Waiting for all nodes to become ready. This can take up to %v", timeout)
 	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		var output []byte
-		output, _ = node.SSH.RunOut("kubectl get nodes -owide")
+		output, _ = node.RunOut("kubectl get nodes -owide")
 		str = string(output)
 		if strings.Contains(str, "NotReady") {
 			return false, nil
@@ -191,7 +191,7 @@ func LoadOfflineImages(c rundata.ClusterNodes) error {
 
 func loadOfflineImagesOnnode(nodeType string, node *rundata.Node) error {
 	if node.InstallType == constants.InstallTypeOffline {
-		return node.SSH.Run(fmt.Sprintf("sh /tmp/.kubei/images/%s.sh", nodeType))
+		return node.Run(fmt.Sprintf("sh /tmp/.kubei/images/%s.sh", nodeType))
 	}
 	return nil
 }

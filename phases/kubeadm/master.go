@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
+	"github.com/yuyicai/kubei/tmpl"
 	"k8s.io/klog"
 	"net"
 	"strings"
@@ -54,7 +54,7 @@ func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.K
 		return nil, fmt.Errorf("[%s] [kubeadm-init] Failed to Initialize master0: %v", node.HostInfo.Host, err)
 	}
 
-	output, err := node.SSH.RunOut(text)
+	output, err := node.RunOut(text)
 	if err != nil {
 		return nil, fmt.Errorf("[%s] [kubeadm-init] Failed to Initialize master0: %v", node.HostInfo.Host, err)
 	}
@@ -106,7 +106,7 @@ func joinControlPlane(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg run
 		return fmt.Errorf("[%s] [kubeadm-join] Failed to join master nodes: %v", node.HostInfo.Host, err)
 	}
 
-	if err := node.SSH.Run(text); err != nil {
+	if err := node.Run(text); err != nil {
 		return fmt.Errorf("[%s] [kubeadm-join] Failed to join master nodes: %v", node.HostInfo.Host, err)
 	}
 
@@ -130,13 +130,13 @@ func getToken(str string, token *rundata.Token) {
 
 func copyAdminConfig(node *rundata.Node) error {
 	klog.V(2).Infof("[%s] [kubectl-config] Copy admin.conf to $HOME/.kube/config", node.HostInfo.Host)
-	if err := node.SSH.Run(tmpl.CopyAdminConfig()); err != nil {
+	if err := node.Run(tmpl.CopyAdminConfig()); err != nil {
 		return fmt.Errorf("[%s] [kubectl-config] Failed to copy admin.conf to $HOME/.kube/config: %v", node.HostInfo.Host, err)
 	}
 
 	if node.HostInfo.User != "root" {
 		klog.V(2).Infof("[%s] [kubectl-config] Chown $HOME/.kube/config to user %s", node.HostInfo.Host, node.HostInfo.User)
-		if err := node.SSH.Run(tmpl.ChownKubectlConfig()); err != nil {
+		if err := node.Run(tmpl.ChownKubectlConfig()); err != nil {
 			return fmt.Errorf("[%s] [kubectl-config] Failed to chown $HOME/.kube/config to user %s: %v", node.HostInfo.Host, node.HostInfo.User, err)
 		}
 	}

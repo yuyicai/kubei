@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
+	"github.com/yuyicai/kubei/tmpl"
 	"k8s.io/klog"
 )
 
@@ -42,6 +42,6 @@ func installKubeComponent(version string, node *rundata.Node) error {
 		return err
 	}
 
-	return node.SSH.Run(cmd)
+	return node.Run(cmd)
 
 }

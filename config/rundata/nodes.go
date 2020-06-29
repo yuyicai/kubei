@@ -1,10 +1,16 @@
 package rundata
 
-import "github.com/yuyicai/kubei/pkg/ssh"
+import (
+	"context"
+	"errors"
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"github.com/yuyicai/kubei/config/constants"
+	"github.com/yuyicai/kubei/pkg/ssh"
+)
 
 type ClusterNodes struct {
 	Masters []*Node
-	Worker  []*Node
+	Workers []*Node
 }
 
 func (c *ClusterNodes) GetAllMastersHost() []string {
@@ -16,7 +22,53 @@ func (c *ClusterNodes) GetAllMastersHost() []string {
 }
 
 func (c *ClusterNodes) GetAllNodes() []*Node {
-	return append(c.Masters, c.Worker...)
+	return append(c.Masters, c.Workers...)
+}
+
+func (c *ClusterNodes) Run(cmd string) error {
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range c.GetAllNodes() {
+		node := node
+		g.Go(func(ctx context.Context) error {
+			return node.Run(cmd)
+		})
+	}
+
+	return g.Wait()
+}
+
+func (c *ClusterNodes) MastersRun(cmd string) error {
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range c.Masters {
+		node := node
+		g.Go(func(ctx context.Context) error {
+			return node.Run(cmd)
+		})
+	}
+
+	return g.Wait()
+}
+
+func (c *ClusterNodes) FirstMasterRun(cmd string) error {
+	if len(c.Masters) == 0 {
+		return errors.New("not master")
+	}
+	return c.Masters[0].Run(cmd)
+}
+
+func (c *ClusterNodes) WorkersRun(cmd string) error {
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range c.Workers {
+		node := node
+		g.Go(func(ctx context.Context) error {
+			return node.Run(cmd)
+		})
+	}
+
+	return g.Wait()
 }
 
 type Node struct {
@@ -34,4 +86,12 @@ type HostInfo struct {
 	Password string
 	Port     string
 	Key      string
+}
+
+func (n *Node) Run(cmd string) error {
+	return n.Run(cmd)
+}
+
+func (n *Node) RunOut(cmd string) ([]byte, error) {
+	return n.RunOut(cmd)
 }

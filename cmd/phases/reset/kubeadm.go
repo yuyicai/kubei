@@ -43,7 +43,7 @@ func runKubeadm(c workflow.RunData) error {
 	cfg := data.KubeiCfg()
 	kubeadmCfg := data.KubeadmCfg()
 
-	if err := preflight.Check(cfg); err != nil {
+	if err := preflight.Prepare(cfg); err != nil {
 		return err
 	}
 

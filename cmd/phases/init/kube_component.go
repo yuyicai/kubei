@@ -43,7 +43,7 @@ func runKubeComponent(c workflow.RunData) error {
 
 	cfg := data.KubeiCfg()
 
-	if err := preflight.Check(cfg); err != nil {
+	if err := preflight.Prepare(cfg); err != nil {
 		return err
 	}
 

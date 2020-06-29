@@ -19,7 +19,7 @@ const (
 	ContainerEngineTypeContainerd = "containerd"
 	ContainerEngineTypeCRIO       = "cri-o"
 	RegistryMirrors               = "https://dockerhub.mirrors.nwafu.edu.cn/"
-	DefaultCGroupDriver           = "systemd"
+	DefaultCGroupDriver           = "cgroupfs"
 	DefaultLogDriver              = "json-file"
 	DefaultLogOptsMaxSize         = "500m"
 	DockerDefaultStorageDriver    = "overlay2"
@@ -28,7 +28,7 @@ const (
 	DefaultServiceSubnet        = "10.96.0.0/12"
 	DefaultPodNetworkCidr       = "10.244.0.0/16"
 	DefaultControlPlaneEndpoint = "apiserver.k8s.local:6443"
-	DefaultImageRepository      = "gcr.azk8s.cn/google_containers"
+	DefaultImageRepository      = "k8s.gcr.io"
 	DefaultAPIBindPort          = 6443
 	DefaultWaitNodeInterval     = 2 * time.Second
 	DefaultWaitNodeTimeout      = 6 * time.Minute

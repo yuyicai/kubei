@@ -30,9 +30,7 @@ func Kubeadm(tmplName, nodeName string, kubernetes rundata.Kubernetes, kubeadmCf
 
 	t, err := template.New(Init).Parse(dedent.Dedent(`
         kubeadm init \
-        {{- if ne .version "" }}
-          --kubernetes-version v{{ .version }} \
-        {{- end }}
+          --kubernetes-version $(kubeadm version -o short) \
           --image-repository {{ .imageRepository }} \
           --pod-network-cidr {{ .podNetworkCidr }} \
           --service-cidr {{ .serviceCidr }} \

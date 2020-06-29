@@ -2,8 +2,8 @@ package network
 
 import (
 	"fmt"
-	"github.com/yuyicai/kubei/cmd/tmpl"
 	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/tmpl"
 	"k8s.io/klog"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 )
@@ -16,7 +16,7 @@ func Flannel(node *rundata.Node, f rundata.Flannel, net kubeadmapi.Networking) e
 		return fmt.Errorf("[%s] [network] Failed to add the flannel network plugin: %v", node.HostInfo.Host, err)
 	}
 
-	if err := node.SSH.Run(text); err != nil {
+	if err := node.Run(text); err != nil {
 		return fmt.Errorf("[%s] [network] Failed to add the flannel network plugin: %v", node.HostInfo.Host, err)
 	}
 	return nil
