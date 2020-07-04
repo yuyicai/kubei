@@ -1,4 +1,4 @@
-package phases
+package reset
 
 import (
 	"errors"
@@ -42,7 +42,9 @@ func runKubeComponent(c workflow.RunData) error {
 
 	cfg := data.KubeiCfg()
 
-	if err := preflight.Prepare(cfg); err != nil {
+	cluster := data.Cluster()
+
+	if err := preflight.Prepare(cluster); err != nil {
 		return err
 	}
 

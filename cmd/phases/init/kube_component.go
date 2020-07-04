@@ -1,11 +1,14 @@
-package phases
+package init
 
 import (
 	"errors"
+	"github.com/yuyicai/kubei/cmd/phases"
+
+	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
+
 	"github.com/yuyicai/kubei/config/options"
 	kubephases "github.com/yuyicai/kubei/phases/kube"
 	"github.com/yuyicai/kubei/preflight"
-	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 )
 
 // NewKubeComponentPhase creates a kubei workflow phase that implements handling of kube.
@@ -36,17 +39,17 @@ func getKubeComponentPhaseFlags() []string {
 }
 
 func runKubeComponent(c workflow.RunData) error {
-	data, ok := c.(InitData)
+	data, ok := c.(phases.RunData)
 	if !ok {
 		return errors.New("kube phase invoked with an invalid data struct")
 	}
 
-	cfg := data.KubeiCfg()
+	cluster := data.Cluster()
 
-	if err := preflight.Prepare(cfg); err != nil {
+	if err := preflight.Prepare(cluster); err != nil {
 		return err
 	}
 
-	return kubephases.InstallKubeComponent(cfg.Kubernetes.Version, cfg.ClusterNodes.GetAllNodes())
+	return kubephases.InstallKubeComponent(cluster)
 
 }

@@ -1,11 +1,14 @@
-package phases
+package init
 
 import (
 	"errors"
-	"github.com/yuyicai/kubei/config/options"
-	runtimephases "github.com/yuyicai/kubei/phases/runtime"
-	"github.com/yuyicai/kubei/preflight"
+	"github.com/yuyicai/kubei/cmd/phases"
+
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
+
+	"github.com/yuyicai/kubei/config/options"
+	containerphases "github.com/yuyicai/kubei/phases/container"
+	"github.com/yuyicai/kubei/preflight"
 )
 
 // NewContainerEnginePhase creates a kubei workflow phase that implements handling of runtime.
@@ -36,16 +39,16 @@ func getContainerEnginePhaseFlags() []string {
 }
 
 func runContainerEngine(c workflow.RunData) error {
-	data, ok := c.(InitData)
+	data, ok := c.(phases.RunData)
 	if !ok {
 		return errors.New("runtime phase invoked with an invalid data struct")
 	}
 
-	cfg := data.KubeiCfg()
+	cluster := data.Cluster()
 
-	if err := preflight.Prepare(cfg); err != nil {
+	if err := preflight.Prepare(cluster); err != nil {
 		return err
 	}
 
-	return runtimephases.InstallContainerEngine(cfg.ClusterNodes.GetAllNodes(), cfg.ContainerEngine)
+	return containerphases.InstallContainerEngine(cluster)
 }

@@ -5,30 +5,17 @@ import (
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
+	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
+
 	phases "github.com/yuyicai/kubei/cmd/phases/reset"
 	"github.com/yuyicai/kubei/config/options"
 	"github.com/yuyicai/kubei/config/rundata"
-	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 )
 
-// resetOptions defines all the init options exposed via flags by kubei reset.
-type resetOptions struct {
-	kubei   *options.Kubei
-	kubeadm *options.Kubeadm
-}
-
-// compile-time assert that the local data object satisfies the phases data interface.
-var _ phases.ResetData = &resetData{}
-
-type resetData struct {
-	kubei   *rundata.Kubei
-	kubeadm *rundata.Kubeadm
-}
-
 // NewCmdreset returns "kubei reset" command.
-func NewCmdReset(out io.Writer, resetOptions *resetOptions) *cobra.Command {
-	if resetOptions == nil {
-		resetOptions = newResetOptions()
+func NewCmdReset(out io.Writer, runOptions *runOptions) *cobra.Command {
+	if runOptions == nil {
+		runOptions = newResetOptions()
 	}
 	resetRunner := workflow.NewRunner()
 
@@ -52,8 +39,8 @@ func NewCmdReset(out io.Writer, resetOptions *resetOptions) *cobra.Command {
 
 	// adds flags to the reset command
 	// reset command local flags could be eventually inherited by the sub-commands automatically generated for phases
-	addResetConfigFlags(cmd.Flags(), resetOptions.kubei)
-	options.AddControlPlaneEndpointFlags(cmd.Flags(), resetOptions.kubeadm)
+	addResetConfigFlags(cmd.Flags(), runOptions.kubei)
+	options.AddControlPlaneEndpointFlags(cmd.Flags(), runOptions.kubeadm)
 
 	// initialize the workflow runner with the list of phases
 	resetRunner.AppendPhase(phases.NewKubeadmPhase())
@@ -63,7 +50,7 @@ func NewCmdReset(out io.Writer, resetOptions *resetOptions) *cobra.Command {
 	// sets the rundata builder function, that will be used by the runner
 	// both when running the entire workflow or single phases
 	resetRunner.SetDataInitializer(func(cmd *cobra.Command, args []string) (workflow.RunData, error) {
-		return newResetData(cmd, args, resetOptions, out)
+		return newResetData(cmd, args, runOptions, out)
 	})
 
 	// binds the Runner to kubei reset command by altering
@@ -80,36 +67,28 @@ func addResetConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
 	options.AddResetFlags(flagSet, &k.Reset)
 }
 
-func newResetOptions() *resetOptions {
+func newResetOptions() *runOptions {
 	kubeiOptions := options.NewKubei()
 	kubeadmOptions := options.NewKubeadm()
 
-	return &resetOptions{
+	return &runOptions{
 		kubei:   kubeiOptions,
 		kubeadm: kubeadmOptions,
 	}
 }
 
-func newResetData(cmd *cobra.Command, args []string, options *resetOptions, out io.Writer) (*resetData, error) {
+func newResetData(cmd *cobra.Command, args []string, options *runOptions, out io.Writer) (*runData, error) {
+	clusterCfg := rundata.NewCluster()
 
-	kubeicfg := rundata.NewKubei()
-	kubeadmcfg := rundata.NewKubeadm()
+	options.kubei.ApplyTo(clusterCfg.Kubei)
+	options.kubeadm.ApplyTo(clusterCfg.Kubeadm)
 
-	options.kubei.ApplyTo(kubeicfg)
-	options.kubeadm.ApplyTo(kubeadmcfg)
+	rundata.DefaultKubeiCfg(clusterCfg.Kubei)
+	rundata.DefaultkubeadmCfg(clusterCfg.Kubeadm)
 
-	resetDatacfg := &resetData{
-		kubei:   kubeicfg,
-		kubeadm: kubeadmcfg,
+	initDatacfg := &runData{
+		cluster: clusterCfg,
 	}
 
-	return resetDatacfg, nil
-}
-
-func (d *resetData) KubeiCfg() *rundata.Kubei {
-	return d.kubei
-}
-
-func (d *resetData) KubeadmCfg() *rundata.Kubeadm {
-	return d.kubeadm
+	return initDatacfg, nil
 }

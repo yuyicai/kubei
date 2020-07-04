@@ -2,22 +2,25 @@ package network
 
 import (
 	"fmt"
+
+	"k8s.io/klog"
+
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/tmpl"
-	"k8s.io/klog"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 )
 
-func Flannel(node *rundata.Node, f rundata.Flannel, net kubeadmapi.Networking) error {
-	klog.Infof("[%s] [network] Add the flannel network plugin", node.HostInfo.Host)
+func Flannel(c *rundata.Cluster) error {
+	return c.RunOnFirstMaster(func(node *rundata.Node) error {
+		klog.Infof("[%s] [network] Add the flannel network plugin", node.HostInfo.Host)
 
-	text, err := tmpl.Flannel(net.PodSubnet, f.Image.GetImage(), f.BackendType)
-	if err != nil {
-		return fmt.Errorf("[%s] [network] Failed to add the flannel network plugin: %v", node.HostInfo.Host, err)
-	}
+		text, err := tmpl.Flannel(c.Kubeadm.Networking.PodSubnet, c.NetworkPlugins.Flannel.Image.GetImage(), c.NetworkPlugins.Flannel.BackendType)
+		if err != nil {
+			return fmt.Errorf("[%s] [network] Failed to add the flannel network plugin: %v", node.HostInfo.Host, err)
+		}
 
-	if err := node.Run(text); err != nil {
-		return fmt.Errorf("[%s] [network] Failed to add the flannel network plugin: %v", node.HostInfo.Host, err)
-	}
-	return nil
+		if err := node.Run(text); err != nil {
+			return fmt.Errorf("[%s] [network] Failed to add the flannel network plugin: %v", node.HostInfo.Host, err)
+		}
+		return nil
+	})
 }

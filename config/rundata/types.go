@@ -1,13 +1,74 @@
 package rundata
 
 import (
-	"github.com/yuyicai/kubei/pkg/ssh"
+	"context"
+	"errors"
+
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+
+	"github.com/yuyicai/kubei/config/constants"
+	"github.com/yuyicai/kubei/pkg/ssh"
 )
 
 type Configuration struct {
 	Kubei   *Kubei
 	Kubeadm *Kubeadm
+}
+
+type Cluster struct {
+	*Kubei
+	Kubeadm *Kubeadm
+}
+
+type Cluster1 struct {
+	Kubei
+	Kubeadm *Kubeadm
+}
+
+func (c *Cluster) RunOnAllNodes(f func(*Node) error) error {
+	return run(c.ClusterNodes.GetAllNodes(), f)
+}
+
+func (c *Cluster) RunOnMasters(f func(*Node) error) error {
+	return run(c.ClusterNodes.Masters, f)
+}
+
+func (c *Cluster) RunOnWorkers(f func(*Node) error) error {
+	return run(c.ClusterNodes.Workers, f)
+}
+
+func (c *Cluster) RunOnOtherMasters(f func(*Node) error) error {
+	if len(c.ClusterNodes.Masters) <= 1 {
+		return nil
+	}
+
+	return run(c.ClusterNodes.Masters[1:], f)
+}
+
+func (c *Cluster) RunOnFirstMaster(f func(*Node) error) error {
+	if len(c.ClusterNodes.Masters) == 0 {
+		return errors.New("not master")
+	}
+
+	return runOne(c.ClusterNodes.Masters[0], f)
+}
+
+func run(nodes []*Node, f func(*Node) error) error {
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range nodes {
+		node := node
+		g.Go(func(ctx context.Context) error {
+			return runOne(node, f)
+		})
+	}
+
+	return g.Wait()
+}
+
+func runOne(node *Node, f func(*Node) error) error {
+	return f(node)
 }
 
 type Kubei struct {
@@ -56,5 +117,22 @@ func NewKubei() *Kubei {
 func NewKubeadm() *Kubeadm {
 	return &Kubeadm{
 		InitConfiguration: kubeadmapi.InitConfiguration{},
+	}
+}
+
+func NewCluster() *Cluster {
+	return &Cluster{
+		Kubei: &Kubei{
+			ContainerEngine: ContainerEngine{},
+			Kubernetes:      Kubernetes{},
+			ClusterNodes:    ClusterNodes{},
+			JumpServer:      JumpServer{},
+			Install:         Install{},
+			Reset:           Reset{},
+			Addons:          Addons{},
+		},
+		Kubeadm: &Kubeadm{
+			InitConfiguration: kubeadmapi.InitConfiguration{},
+		},
 	}
 }

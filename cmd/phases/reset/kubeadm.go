@@ -1,4 +1,4 @@
-package phases
+package reset
 
 import (
 	"errors"
@@ -43,7 +43,9 @@ func runKubeadm(c workflow.RunData) error {
 	cfg := data.KubeiCfg()
 	kubeadmCfg := data.KubeadmCfg()
 
-	if err := preflight.Prepare(cfg); err != nil {
+	cluster := data.Cluster()
+
+	if err := preflight.Prepare(cluster); err != nil {
 		return err
 	}
 

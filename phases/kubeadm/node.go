@@ -3,52 +3,45 @@ package kubeadm
 import (
 	"context"
 	"fmt"
-	"github.com/bilibili/kratos/pkg/sync/errgroup"
-	"github.com/yuyicai/kubei/config/constants"
-	"github.com/yuyicai/kubei/config/rundata"
-	"github.com/yuyicai/kubei/phases/system"
-	"github.com/yuyicai/kubei/tmpl"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog"
+
+	"github.com/yuyicai/kubei/config/constants"
+	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/phases/system"
+	"github.com/yuyicai/kubei/tmpl"
 )
 
 //JoinNode join nodes
-func JoinNode(kubeiCfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
+func JoinNode(c *rundata.Cluster) error {
+	return c.RunOnWorkers(func(node *rundata.Node) error {
+		if err := system.SwapOff(node); err != nil {
+			return err
+		}
 
-	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
-	for _, node := range kubeiCfg.ClusterNodes.Workers {
-		node := node
-		g.Go(func(ctx context.Context) error {
+		if err := iptables(node); err != nil {
+			return err
+		}
 
-			if err := system.SwapOff(node); err != nil {
-				return err
-			}
+		if err := ha(node, c.Kubei.ClusterNodes.GetAllMastersHost(), &c.Kubei.HA, c.Kubeadm); err != nil {
+			return err
+		}
 
-			if err := iptables(node); err != nil {
-				return err
-			}
+		// join worker node
+		klog.Infof("[%s] [kubeadm] Joining worker nodes", node.HostInfo.Host)
+		if err := joinNode(node, *c.Kubei, *c.Kubeadm); err != nil {
+			return fmt.Errorf("[%s] Failed to join master worker : %v", node.HostInfo.Host, err)
+		}
+		klog.Infof("[%s] [kubeadm] Successfully joined worker nodes", node.HostInfo.Host)
 
-			if err := ha(node, kubeiCfg.ClusterNodes.GetAllMastersHost(), &kubeiCfg.HA, kubeadmCfg); err != nil {
-				return err
-			}
-
-			// join worker node
-			klog.Infof("[%s] [kubeadm] Joining worker nodes", node.HostInfo.Host)
-			if err := joinNode(node, *kubeiCfg, *kubeadmCfg); err != nil {
-				return fmt.Errorf("[%s] Failed to join master worker : %v", node.HostInfo.Host, err)
-			}
-			klog.Infof("[%s] [kubeadm] Successfully joined worker nodes", node.HostInfo.Host)
-
-			return nil
-		})
-	}
-
-	return g.Wait()
+		return nil
+	})
 }
 
 func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubeadm) error {
@@ -148,7 +141,18 @@ func joinNode(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kub
 	return node.Run(text)
 }
 
-func CheckNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, bool) {
+func CheckNodesReady(c *rundata.Cluster) error {
+	return c.RunOnMasters(func(node *rundata.Node) error {
+		output, err := checkNodesReady(node, constants.DefaultWaitNodeInterval, constants.DefaultWaitNodeTimeout)
+		if err != nil {
+			return err
+		}
+		klog.Info(output, "\nKubernetes High-Availability cluster deployment completed")
+		return nil
+	})
+}
+
+func checkNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, error) {
 	var str string
 	klog.Infof("[check] Waiting for all nodes to become ready. This can take up to %v", timeout)
 	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
@@ -160,31 +164,50 @@ func CheckNodesReady(node *rundata.Node, interval, timeout time.Duration) (strin
 		} else if strings.Contains(str, "Ready") {
 			return true, nil
 		}
-
 		return false, nil
 	}); err != nil {
-		return "", false
+		return "", err
 	}
-
-	return str, true
+	return str, nil
 }
 
-func LoadOfflineImages(c rundata.ClusterNodes) error {
-	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
-	for _, node := range c.Masters {
-		node := node
-		g.Go(func(ctx context.Context) error {
-			return loadOfflineImagesOnnode("master", node)
-		})
-	}
+//func LoadOfflineImages(c rundata.ClusterNodes) error {
+//	g := errgroup.WithCancel(context.Background())
+//	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+//	for _, node := range c.Masters {
+//		node := node
+//		g.Go(func(ctx context.Context) error {
+//			return loadOfflineImagesOnnode("master", node)
+//		})
+//	}
+//
+//	for _, node := range c.GetAllNodes() {
+//		node := node
+//		g.Go(func(ctx context.Context) error {
+//			return loadOfflineImagesOnnode("node", node)
+//		})
+//	}
+//
+//	return g.Wait()
+//}
 
-	for _, node := range c.GetAllNodes() {
-		node := node
-		g.Go(func(ctx context.Context) error {
+func LoadOfflineImages(c *rundata.Cluster) error {
+
+	g := errgroup.WithCancel(context.Background())
+	g.Go(func(ctx context.Context) error {
+		if err := c.RunOnMasters(func(node *rundata.Node) error {
+			return loadOfflineImagesOnnode("master", node)
+		}); err != nil {
+			return err
+		}
+
+		if err := c.RunOnWorkers(func(node *rundata.Node) error {
 			return loadOfflineImagesOnnode("node", node)
-		})
-	}
+		}); err != nil {
+			return err
+		}
+		return nil
+	})
 
 	return g.Wait()
 }

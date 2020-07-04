@@ -15,13 +15,13 @@ import (
 	"github.com/yuyicai/kubei/pkg/ssh"
 )
 
-func Prepare(cfg *rundata.Kubei) error {
-
-	if err := check(cfg); err != nil {
-		return err
-	}
-
-	return send(cfg)
+func Prepare(c *rundata.Cluster) error {
+	return c.RunOnAllNodes(func(node *rundata.Node) error {
+		if err := check(c.Kubei); err != nil {
+			return err
+		}
+		return send(c.Kubei)
+	})
 }
 
 func check(cfg *rundata.Kubei) error {

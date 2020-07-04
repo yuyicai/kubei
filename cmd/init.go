@@ -3,33 +3,17 @@ package cmd
 import (
 	"io"
 
-	phases "github.com/yuyicai/kubei/cmd/phases/init"
-	"github.com/yuyicai/kubei/config/options"
-	"github.com/yuyicai/kubei/config/rundata"
-
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
+
+	initphases "github.com/yuyicai/kubei/cmd/phases/init"
+	"github.com/yuyicai/kubei/config/options"
+	"github.com/yuyicai/kubei/config/rundata"
 )
 
-// initOptions defines all the init options exposed via flags by kubei init.
-type initOptions struct {
-	kubei   *options.Kubei
-	kubeadm *options.Kubeadm
-}
-
-// compile-time assert that the local data object satisfies the phases data interface.
-var _ phases.InitData = &initData{}
-
-// initData defines all the runtime information used when running the kubei init workflow;
-// this data is shared across all the phases that are included in the workflow.
-type initData struct {
-	kubei   *rundata.Kubei
-	kubeadm *rundata.Kubeadm
-}
-
 // NewCmdInit returns "kubei init" command.
-func NewCmdInit(out io.Writer, initOptions *initOptions) *cobra.Command {
+func NewCmdInit(out io.Writer, initOptions *runOptions) *cobra.Command {
 	if initOptions == nil {
 		initOptions = newInitOptions()
 	}
@@ -59,9 +43,9 @@ func NewCmdInit(out io.Writer, initOptions *initOptions) *cobra.Command {
 	options.AddKubeadmConfigFlags(cmd.Flags(), initOptions.kubeadm)
 
 	// initialize the workflow runner with the list of phases
-	initRunner.AppendPhase(phases.NewContainerEnginePhase())
-	initRunner.AppendPhase(phases.NewKubeComponentPhase())
-	initRunner.AppendPhase(phases.NewKubeadmPhase())
+	initRunner.AppendPhase(initphases.NewContainerEnginePhase())
+	initRunner.AppendPhase(initphases.NewKubeComponentPhase())
+	initRunner.AppendPhase(initphases.NewKubeadmPhase())
 
 	// sets the rundata builder function, that will be used by the runner
 	// both when running the entire workflow or single phases
@@ -84,39 +68,29 @@ func addInitConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
 	options.AddOfflinePackageFlags(flagSet, &k.OfflineFile)
 }
 
-func newInitOptions() *initOptions {
+func newInitOptions() *runOptions {
 	kubeiOptions := options.NewKubei()
 	kubeadmOptions := options.NewKubeadm()
 
-	return &initOptions{
+	return &runOptions{
 		kubei:   kubeiOptions,
 		kubeadm: kubeadmOptions,
 	}
 }
 
-func newInitData(cmd *cobra.Command, args []string, options *initOptions, out io.Writer) (*initData, error) {
+func newInitData(cmd *cobra.Command, args []string, options *runOptions, out io.Writer) (*runData, error) {
 
-	kubeiCfg := rundata.NewKubei()
-	kubeadmCfg := rundata.NewKubeadm()
+	clusterCfg := rundata.NewCluster()
 
-	options.kubei.ApplyTo(kubeiCfg)
-	options.kubeadm.ApplyTo(kubeadmCfg)
+	options.kubei.ApplyTo(clusterCfg.Kubei)
+	options.kubeadm.ApplyTo(clusterCfg.Kubeadm)
 
-	rundata.DefaultKubeiCfg(kubeiCfg)
-	rundata.DefaultkubeadmCfg(kubeadmCfg)
+	rundata.DefaultKubeiCfg(clusterCfg.Kubei)
+	rundata.DefaultkubeadmCfg(clusterCfg.Kubeadm)
 
-	initDatacfg := &initData{
-		kubei:   kubeiCfg,
-		kubeadm: kubeadmCfg,
+	initDatacfg := &runData{
+		cluster: clusterCfg,
 	}
 
 	return initDatacfg, nil
-}
-
-func (d *initData) KubeiCfg() *rundata.Kubei {
-	return d.kubei
-}
-
-func (d *initData) KubeadmCfg() *rundata.Kubeadm {
-	return d.kubeadm
 }

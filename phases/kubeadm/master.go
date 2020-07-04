@@ -1,51 +1,52 @@
 package kubeadm
 
 import (
-	"context"
 	"fmt"
-	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"net"
+	"strings"
+
+	"k8s.io/klog"
+
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/phases/system"
 	"github.com/yuyicai/kubei/tmpl"
-	"k8s.io/klog"
-	"net"
-	"strings"
 )
 
 // InitMaster init master0
-func InitMaster(node *rundata.Node, kubeiCfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
-	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-	if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
-		return err
-	}
+func InitMaster(c *rundata.Cluster) error {
+	return c.RunOnFirstMaster(func(node *rundata.Node) error {
+		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
+		if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
+			return err
+		}
 
-	if err := system.SwapOff(node); err != nil {
-		return err
-	}
+		if err := system.SwapOff(node); err != nil {
+			return err
+		}
 
-	if err := iptables(node); err != nil {
-		return err
-	}
+		if err := iptables(node); err != nil {
+			return err
+		}
 
-	klog.Infof("[%s] [kubeadm-init] Initializing master0", node.HostInfo.Host)
+		klog.Infof("[%s] [kubeadm-init] Initializing master0", node.HostInfo.Host)
 
-	output, err := initMaster(node, *kubeiCfg, *kubeadmCfg)
-	if err != nil {
-		return err
-	}
+		output, err := initMaster(node, *c.Kubei, *c.Kubeadm)
+		if err != nil {
+			return err
+		}
 
-	if err := copyAdminConfig(node); err != nil {
-		return err
-	}
+		if err := copyAdminConfig(node); err != nil {
+			return err
+		}
 
-	klog.Infof("[%s] [kubeadm-init] Successfully initialized master0", node.HostInfo.Host)
+		klog.Infof("[%s] [kubeadm-init] Successfully initialized master0", node.HostInfo.Host)
 
-	klog.V(2).Infof("[%s] [token] Getting token from master init output", node.HostInfo.Host)
-	getToken(string(output), &kubeiCfg.Kubernetes.Token)
+		klog.V(2).Infof("[%s] [token] Getting token from master init output", node.HostInfo.Host)
+		getToken(string(output), &c.Kubernetes.Token)
 
-	return nil
-
+		return nil
+	})
 }
 
 func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) ([]byte, error) {
@@ -62,42 +63,33 @@ func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.K
 }
 
 // JoinControlPlane join masters to ControlPlane
-func JoinControlPlane(masters []*rundata.Node, kubeiCfg *rundata.Kubei, kubeadmCfg *rundata.Kubeadm) error {
-	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
-	for _, node := range masters[1:] {
-		node := node
-		g.Go(func(ctx context.Context) error {
+func JoinControlPlane(c *rundata.Cluster) error {
+	return c.RunOnOtherMasters(func(node *rundata.Node) error {
+		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
+		if err := system.SetHost(node, c.ClusterNodes.Masters[0].HostInfo.Host, apiDomainName); err != nil {
+			return err
+		}
 
-			if err := system.SetHost(node, masters[0].HostInfo.Host, apiDomainName); err != nil {
-				return err
-			}
+		if err := system.SwapOff(node); err != nil {
+			return err
+		}
 
-			if err := system.SwapOff(node); err != nil {
-				return err
-			}
+		if err := iptables(node); err != nil {
+			return err
+		}
 
-			if err := iptables(node); err != nil {
-				return err
-			}
+		klog.Infof("[%s] [kubeadm-join] Joining master nodes", node.HostInfo.Host)
+		if err := joinControlPlane(node, *c.Kubei, *c.Kubeadm); err != nil {
+			return err
+		}
+		klog.Infof("[%s] [kubeadm-join] Successfully joined master nodes", node.HostInfo.Host)
 
-			klog.Infof("[%s] [kubeadm-join] Joining master nodes", node.HostInfo.Host)
-			if err := joinControlPlane(node, *kubeiCfg, *kubeadmCfg); err != nil {
-				return err
-			}
-			klog.Infof("[%s] [kubeadm-join] Successfully joined master nodes", node.HostInfo.Host)
+		if err := copyAdminConfig(node); err != nil {
+			return err
+		}
 
-			if err := copyAdminConfig(node); err != nil {
-				return err
-			}
-
-			return system.SetHost(node, constants.LoopbackAddress, apiDomainName)
-		})
-	}
-
-	return g.Wait()
-
+		return system.SetHost(node, constants.LoopbackAddress, apiDomainName)
+	})
 }
 
 func joinControlPlane(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) error {

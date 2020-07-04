@@ -71,6 +71,19 @@ func (c *ClusterNodes) WorkersRun(cmd string) error {
 	return g.Wait()
 }
 
+func (c *ClusterNodes) LogRun(f func(node *Node) error) error {
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
+	for _, node := range c.Workers {
+		node := node
+		g.Go(func(ctx context.Context) error {
+			return f(node)
+		})
+	}
+
+	return g.Wait()
+}
+
 type Node struct {
 	SSH                   *ssh.Client
 	HostInfo              HostInfo
@@ -89,9 +102,9 @@ type HostInfo struct {
 }
 
 func (n *Node) Run(cmd string) error {
-	return n.Run(cmd)
+	return n.SSH.Run(cmd)
 }
 
 func (n *Node) RunOut(cmd string) ([]byte, error) {
-	return n.RunOut(cmd)
+	return n.SSH.RunOut(cmd)
 }
