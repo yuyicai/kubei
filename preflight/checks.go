@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/config/constants"

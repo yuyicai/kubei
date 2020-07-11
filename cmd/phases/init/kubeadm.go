@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
 	"github.com/yuyicai/kubei/cmd/phases"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/yuyicai/kubei/config/constants"
 
-	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"github.com/yuyicai/kubei/config/rundata"
 	"github.com/yuyicai/kubei/tmpl"
 	"k8s.io/klog"

@@ -3,7 +3,7 @@ package rundata
 import (
 	"context"
 	"errors"
-	"github.com/bilibili/kratos/pkg/sync/errgroup"
+	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/pkg/ssh"
 )
