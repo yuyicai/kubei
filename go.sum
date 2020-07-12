@@ -891,6 +891,7 @@ k8s.io/kubernetes/staging/src/k8s.io/apimachinery v0.0.0-20200626033830-e6503f8d
 k8s.io/kubernetes/staging/src/k8s.io/apimachinery v0.0.0-20200626033830-e6503f8d8f76/go.mod h1:0LbhSvBf6oDO/G0IsPYTC3eGykX9kRjGqE1+90am7Pg=
 k8s.io/kubernetes/staging/src/k8s.io/apiserver v0.0.0-20200626033830-e6503f8d8f76/go.mod h1:wYoVKxMBc/Gtl3o5eEhoIy1iS0Zw8kLYIak9mud65gg=
 k8s.io/kubernetes/staging/src/k8s.io/cli-runtime v0.0.0-20200626033830-e6503f8d8f76/go.mod h1:e0a+/gPy7PnNaRJHZz5E3lqfMsiJ17sSfvktHyipb3I=
+k8s.io/kubernetes/staging/src/k8s.io/client-go v0.0.0-20200626033830-e6503f8d8f76 h1:DcP8zF6MowBSP13jDz63UcN1UT5umXYH2YQXBcpgQAc=
 k8s.io/kubernetes/staging/src/k8s.io/client-go v0.0.0-20200626033830-e6503f8d8f76/go.mod h1:Ck7kQmlFASfY0SaqYH1NwUrxeuAipkIbnuHi642eQ+I=
 k8s.io/kubernetes/staging/src/k8s.io/cloud-provider v0.0.0-20200626033830-e6503f8d8f76/go.mod h1:jW0IWD1v1cNcp/vvXbVuovmZNSieKSZBdM7VmX1lrVI=
 k8s.io/kubernetes/staging/src/k8s.io/cluster-bootstrap v0.0.0-20200626033830-e6503f8d8f76 h1:YrIqhog7OXXTZXlQB70e0sc/VQ+lbEEfOM2Eme+5JSM=
