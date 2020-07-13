@@ -1,4 +1,4 @@
-package cert
+package pki
 
 import (
 	"crypto"
@@ -20,8 +20,7 @@ import (
 // CertConfig is a wrapper around certutil.Config extending it with PublicKeyAlgorithm.
 type CertConfig struct {
 	certutil.Config
-	CaNotAfterTime     time.Duration
-	CertNotAfterTime   time.Duration
+	NotAfterTime       time.Duration
 	PublicKeyAlgorithm x509.PublicKeyAlgorithm
 }
 
@@ -35,7 +34,7 @@ func NewSelfSignedCACert(cfg CertConfig, key crypto.Signer) (*x509.Certificate, 
 			Organization: cfg.Organization,
 		},
 		NotBefore:             now.UTC(),
-		NotAfter:              now.Add(cfg.CaNotAfterTime).UTC(),
+		NotAfter:              now.Add(cfg.NotAfterTime).UTC(),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 		IsCA:                  true,
@@ -102,7 +101,7 @@ func NewSignedCert(cfg *CertConfig, key crypto.Signer, caCert *x509.Certificate,
 		IPAddresses:  cfg.AltNames.IPs,
 		SerialNumber: serial,
 		NotBefore:    caCert.NotBefore,
-		NotAfter:     time.Now().Add(cfg.CertNotAfterTime).UTC(),
+		NotAfter:     time.Now().Add(cfg.NotAfterTime).UTC(),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  cfg.Usages,
 	}

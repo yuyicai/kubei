@@ -32,6 +32,7 @@ const (
 	DefaultAPIBindPort          = 6443
 	DefaultWaitNodeInterval     = 2 * time.Second
 	DefaultWaitNodeTimeout      = 6 * time.Minute
+	DefaultCertNotAfterTime     = 24 * time.Hour * 365 * 10
 
 	// networking plugin
 	DefaulNetworkPlugin           = "flannel"
