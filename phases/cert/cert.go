@@ -6,18 +6,69 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/yuyicai/kubei/config/constants"
+	"github.com/yuyicai/kubei/config/rundata"
 	"k8s.io/klog"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util/pkiutil"
+	kubeadmpkiutil "k8s.io/kubernetes/cmd/kubeadm/app/util/pkiutil"
 	"time"
 )
+
+func CreateCert(c *rundata.Cluster) error {
+
+	certTree := rundata.CertificateTree{}
+
+	if err := c.RunOnFirstMaster(func(node *rundata.Node) error {
+		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
+		if err := CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, constants.DefaultCertNotAfterTime, certTree); err != nil {
+			return err
+		}
+		certTree = node.CertificateTree
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return c.RunOnOtherMasters(func(node *rundata.Node) error {
+		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
+		return CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, constants.DefaultCertNotAfterTime, certTree)
+	})
+}
+
+// CreatePKIAssets will create all PKI assets necessary.
+func CreatePKIAssets(node *rundata.Node, cfg *kubeadmapi.InitConfiguration, notAfterTime time.Duration, certTree rundata.CertificateTree) error {
+	klog.V(1).Infoln("creating PKI assets")
+
+	var certList rundata.Certificates
+	var err error
+
+	certList = rundata.GetDefaultCertList()
+
+	certMap := certList.AsMap()
+
+	for cert := range certTree {
+		if cert.CAName == "" {
+			certMap[cert.Name] = cert
+		}
+	}
+
+	node.CertificateTree, err = certMap.CertTree()
+	if err != nil {
+		return err
+	}
+
+	if err := node.CertificateTree.CreateTree(cfg, notAfterTime); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("error creating PKI assets on %s", node.HostInfo.Host))
+	}
+
+	return nil
+}
 
 // CreateServiceAccountKeyAndPublicKey creates new public/private key files for signing service account users.
 func CreateServiceAccountKeyAndPublicKey(keyType x509.PublicKeyAlgorithm) (crypto.Signer, crypto.PublicKey, error) {
 	klog.V(1).Infoln("creating new public/private key files for signing service account users")
 
-	key, err := pkiutil.NewPrivateKey(keyType)
+	key, err := kubeadmpkiutil.NewPrivateKey(keyType)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -28,16 +79,15 @@ func CreateServiceAccountKeyAndPublicKey(keyType x509.PublicKeyAlgorithm) (crypt
 }
 
 // CreateCACertAndKey generates and writes out a given certificate authority.
-func CreateCACertAndKey(certSpec *KubeadmCert, cfg *kubeadmapi.InitConfiguration,
-	notAfterTime time.Duration) (*x509.Certificate, crypto.Signer, error) {
+func CreateCACertAndKey(certSpec *rundata.Cert, cfg *kubeadmapi.InitConfiguration, notAfterTime time.Duration) error {
 	if certSpec.CAName != "" {
-		return nil, nil, errors.Errorf("this function should only be used for CAs, but cert %s has CA %s", certSpec.Name, certSpec.CAName)
+		return errors.Errorf("this function should only be used for CAs, but cert %s has CA %s", certSpec.Name, certSpec.CAName)
 	}
 
 	if notAfterTime < constants.DefaultCertNotAfterTime {
 		notAfterTime = constants.DefaultCertNotAfterTime
 	}
-	certSpec.config.NotAfterTime = notAfterTime
+	certSpec.Config.NotAfterTime = notAfterTime
 
 	klog.V(1).Infof("creating a new certificate authority for %s", certSpec.Name)
 
@@ -45,11 +95,11 @@ func CreateCACertAndKey(certSpec *KubeadmCert, cfg *kubeadmapi.InitConfiguration
 }
 
 // CreateCertAndKeyWithCA
-func CreateCertAndKeyWithCA(certSpec *KubeadmCert, caCertSpec *KubeadmCert, cfg *kubeadmapi.InitConfiguration,
-	caCert *x509.Certificate, caKey crypto.Signer, notAfterTime time.Duration) (*x509.Certificate, crypto.Signer, error) {
+func CreateCertAndKeyWithCA(certSpec *rundata.Cert, caCertSpec *rundata.Cert, cfg *kubeadmapi.InitConfiguration,
+	caCert *x509.Certificate, caKey crypto.Signer, notAfterTime time.Duration) error {
 	if certSpec.CAName != caCertSpec.Name {
-		return nil, nil, errors.Errorf("expected CAname for %s to be %q, but was %s", certSpec.Name, certSpec.CAName, caCertSpec.Name)
+		return errors.Errorf("expected CAname for %s to be %q, but was %s", certSpec.Name, certSpec.CAName, caCertSpec.Name)
 	}
-	certSpec.config.NotAfterTime = notAfterTime
+	certSpec.Config.NotAfterTime = notAfterTime
 	return certSpec.CreateFromCA(cfg, caCert, caKey)
 }

@@ -87,6 +87,7 @@ func (c *ClusterNodes) LogRun(f func(node *Node) error) error {
 type Node struct {
 	SSH                   *ssh.Client
 	HostInfo              HostInfo
+	CertificateTree       CertificateTree
 	Name                  string
 	PackageManagementType string
 	InstallType           string
