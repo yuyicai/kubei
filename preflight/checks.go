@@ -1,13 +1,11 @@
 package preflight
 
 import (
-	"context"
 	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/config/constants"
@@ -17,32 +15,23 @@ import (
 
 func Prepare(c *rundata.Cluster) error {
 	return c.RunOnAllNodes(func(node *rundata.Node) error {
-		if err := check(c.Kubei); err != nil {
+		if err := check(node, c.Kubei); err != nil {
 			return err
 		}
-		return send(c.Kubei)
+		return send(node, c.Kubei)
 	})
 }
 
-func check(cfg *rundata.Kubei) error {
+func check(node *rundata.Node, cfg *rundata.Kubei) error {
 	if err := jumpServerCheck(&cfg.JumpServer); err != nil {
 		return fmt.Errorf("[preflight] Failed to set jump server: %v", err)
 	}
 
-	return nodesCheck(cfg)
+	return nodesCheck(node, cfg)
 }
 
-func send(cfg *rundata.Kubei) error {
-	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
-	for _, node := range cfg.ClusterNodes.GetAllNodes() {
-		node := node
-		g.Go(func(ctx context.Context) error {
-			return sendAndtar(path.Join("/tmp/.kubei", filepath.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
-		})
-	}
-
-	return g.Wait()
+func send(node *rundata.Node, cfg *rundata.Kubei) error {
+	return sendAndtar(path.Join("/tmp/.kubei", filepath.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
 }
 
 func jumpServerCheck(jumpServer *rundata.JumpServer) error {
@@ -57,26 +46,17 @@ func jumpServerCheck(jumpServer *rundata.JumpServer) error {
 	return nil
 }
 
-func nodesCheck(cfg *rundata.Kubei) error {
+func nodesCheck(node *rundata.Node, cfg *rundata.Kubei) error {
 
-	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
-	for _, node := range cfg.ClusterNodes.GetAllNodes() {
-		node := node
-		g.Go(func(ctx context.Context) error {
-
-			if err := sshCheck(node, &cfg.JumpServer); err != nil {
-				return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
-			}
-
-			if err := packageManagementTypeCheck(node); err != nil {
-				return err
-			}
-			return sendAndtar(path.Join("/tmp/.kubei", filepath.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
-		})
+	if err := sshCheck(node, &cfg.JumpServer); err != nil {
+		return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
 	}
 
-	return g.Wait()
+	if err := packageManagementTypeCheck(node); err != nil {
+		return err
+	}
+	return sendAndtar(path.Join("/tmp/.kubei", filepath.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
+
 }
 
 func sshCheck(node *rundata.Node, jumpServer *rundata.JumpServer) error {
