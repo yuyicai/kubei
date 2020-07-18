@@ -67,8 +67,9 @@
     runtime是部署docker容器引擎
     kube是部署k8s组件，包括kubeadm、kubelet、kubectl、kubernetes-cni、crictl
     kubeadm是条用kubeadm对集群进行初始化，将nodes加入集群等工作，即创建集群这一步骤
-
-
+    
+--offline-file string               Path to offline file
+    离线包路径
 ```
 
 

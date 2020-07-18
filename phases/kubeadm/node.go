@@ -34,11 +34,11 @@ func JoinNode(c *rundata.Cluster) error {
 		}
 
 		// join worker node
-		klog.Infof("[%s] [kubeadm] Joining worker nodes", node.HostInfo.Host)
+		klog.Infof("[%s] [kubeadm-join] Joining worker nodes", node.HostInfo.Host)
 		if err := joinNode(node, *c.Kubei, *c.Kubeadm); err != nil {
 			return fmt.Errorf("[%s] Failed to join master worker : %v", node.HostInfo.Host, err)
 		}
-		klog.Infof("[%s] [kubeadm] Successfully joined worker nodes", node.HostInfo.Host)
+		klog.Infof("[%s] [kubeadm-join] Successfully joined worker nodes", node.HostInfo.Host)
 
 		return nil
 	})
@@ -142,7 +142,7 @@ func joinNode(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kub
 }
 
 func CheckNodesReady(c *rundata.Cluster) error {
-	return c.RunOnMasters(func(node *rundata.Node) error {
+	return c.RunOnFirstMaster(func(node *rundata.Node) error {
 		output, err := checkNodesReady(node, constants.DefaultWaitNodeInterval, constants.DefaultWaitNodeTimeout)
 		if err != nil {
 			return err
@@ -154,7 +154,7 @@ func CheckNodesReady(c *rundata.Cluster) error {
 
 func checkNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, error) {
 	var str string
-	klog.Infof("[check] Waiting for all nodes to become ready. This can take up to %v", timeout)
+	klog.Infof("[%s] [check] Waiting for all nodes to become ready. This can take up to %v", node.HostInfo.Host, timeout)
 	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		var output []byte
 		output, _ = node.RunOut("kubectl get nodes -owide")
@@ -171,26 +171,6 @@ func checkNodesReady(node *rundata.Node, interval, timeout time.Duration) (strin
 	return str, nil
 }
 
-//func LoadOfflineImages(c rundata.ClusterNodes) error {
-//	g := errgroup.WithCancel(context.Background())
-//	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
-//	for _, node := range c.Masters {
-//		node := node
-//		g.Go(func(ctx context.Context) error {
-//			return loadOfflineImagesOnnode("master", node)
-//		})
-//	}
-//
-//	for _, node := range c.GetAllNodes() {
-//		node := node
-//		g.Go(func(ctx context.Context) error {
-//			return loadOfflineImagesOnnode("node", node)
-//		})
-//	}
-//
-//	return g.Wait()
-//}
-
 func LoadOfflineImages(c *rundata.Cluster) error {
 
 	g := errgroup.WithCancel(context.Background())
@@ -201,7 +181,7 @@ func LoadOfflineImages(c *rundata.Cluster) error {
 			return err
 		}
 
-		if err := c.RunOnWorkers(func(node *rundata.Node) error {
+		if err := c.RunOnAllNodes(func(node *rundata.Node) error {
 			return loadOfflineImagesOnnode("node", node)
 		}); err != nil {
 			return err
