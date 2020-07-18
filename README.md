@@ -4,7 +4,7 @@
 
 `kubei`原理：通过ssh连接到集群服务器，进行容器引擎安装、kubernetes组件安装、主机初始化配置、本地负载均衡器部署、调用kubeadm初始化集群master、调用kubeadm将主机加入节点
 
-所有源默认已替换成国内源，解决部署k8s无法下载容器镜像问题
+提供离线部署功能，解决部署k8s无法下载容器镜像问题
 
 支持使用普通用户（sudo用户）连接集群服务器进行安装部署，支持通过堡垒机连接集群服务器  
 
@@ -22,7 +22,7 @@
     <tbody>
         <tr>
             <td align="center" colspan="2">Kubernetes</td>
-            <td align="center">1.16.X、1.17.X</td>
+            <td align="center">1.16.X、1.17.X、1.18.X</td>
         </tr>
         <tr>
             <td align="center">容器引擎</td>
@@ -41,48 +41,97 @@
     </tbody>
 </table>
 
+
 *etcd版本由kubeadm对于版本默认确定*
 
 
 
 # 快速开始
 
-*实际部署中建议使用同一发行版的Linux系统，这里使用两种系统主要是为了体现兼容性*
-
 |   主机    | 集群角色 |      系统版本      |
 | :-------: | :------: | :----------------: |
-| 10.3.0.10 |  master  | Ubuntu 18.04.3 LTS |
-| 10.3.0.11 |  master  | Ubuntu 16.04.6 LTS |
-| 10.3.0.12 |  master  |     CentOS 7.4     |
-| 10.3.0.20 |  worker  |     CentOS 7.7     |
-| 10.3.0.21 |  worker  | Ubuntu 18.04.3 LTS |
+| 10.3.0.10 |  master  | Ubuntu 18.04 LTS   |
+| 10.3.0.11 |  master  | Ubuntu 18.04 LTS   |
+| 10.3.0.12 |  master  | Ubuntu 18.04 LTS   |
+| 10.3.0.20 |  worker  | Ubuntu 18.04 LTS   |
+| 10.3.0.21 |  worker  | Ubuntu 18.04 LTS   |
 
 *默认使用root用户和22端口，如果需要使用普通用户和其它ssh端口，请查看[ssh用户参数说明](./docs/flags.md)*
 
 *如果要用密码做ssh登录验证，请查看[ssh用户参数说明](./docs/flags.md)*
 
+**下载离线包：**
+
+https://github.com/yuyicai/kubernetes-offline/releases
+
+下载部署程序
+
+https://github.com/yuyicai/kubei/releases
+
 **执行部署命令：**
 
 ```
-kubei init --key=$HOME/.ssh/k8s.key \
+./kubei init --key=$HOME/.ssh/k8s.key \
  --masters 10.3.0.10,10.3.0.11,10.3.0.12 \
  --workers 10.3.0.20,10.3.0.21 \
+ --offline-file ./kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz \
  --skip-headers
 ```
 
-部署过程：
-
-![k8s-ha](./docs/images/init.gif)
-
-部署结果：
+部署过程及结果：
 
 ```
-NAME        STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                KERNEL-VERSION               CONTAINER-RUNTIME
-10.3.0.10   Ready    master   58s   v1.17.0   10.3.0.10     <none>        Ubuntu 18.04.3 LTS      4.15.0-66-generic            docker://19.3.5
-10.3.0.11   Ready    master   21s   v1.17.0   10.3.0.11     <none>        Ubuntu 16.04.6 LTS      4.4.0-142-generic            docker://19.3.5
-10.3.0.12   Ready    master   28s   v1.17.0   10.3.0.12     <none>        CentOS Linux 7 (Core)   3.10.0-1062.1.2.el7.x86_64   docker://19.3.5
-10.3.0.20   Ready    <none>   34s   v1.17.0   10.3.0.20     <none>        CentOS Linux 7 (Core)   3.10.0-693.2.2.el7.x86_64    docker://19.3.5
-10.3.0.21   Ready    <none>   11s   v1.17.0   10.3.0.21     <none>        Ubuntu 18.04.3 LTS      4.15.0-66-generic            docker://19.3.5
+[10.3.0.10] [preflight] Checking SSH connection
+[10.3.0.11] [preflight] Checking SSH connection
+[10.3.0.12] [preflight] Checking SSH connection
+[10.3.0.20] [preflight] Checking SSH connection
+[10.3.0.21] [preflight] Checking SSH connection
+[10.3.0.10] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
+[10.3.0.11] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
+[10.3.0.21] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
+[10.3.0.20] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
+[10.3.0.12] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
+[10.3.0.10] [container-engine] Installing Docker
+[10.3.0.11] [container-engine] Installing Docker
+[10.3.0.12] [container-engine] Installing Docker
+[10.3.0.20] [container-engine] Installing Docker
+[10.3.0.21] [container-engine] Installing Docker
+[10.3.0.10] [container-engine] Successfully installed Docker
+[10.3.0.11] [container-engine] Successfully installed Docker
+[10.3.0.12] [container-engine] Successfully installed Docker
+[10.3.0.20] [container-engine] Successfully installed Docker
+[10.3.0.21] [container-engine] Successfully installed Docker
+[10.3.0.10] [kube] Installing Kubernetes component
+[10.3.0.11] [kube] Installing Kubernetes component
+[10.3.0.12] [kube] Installing Kubernetes component
+[10.3.0.20] [kube] Installing Kubernetes component
+[10.3.0.21] [kube] Installing Kubernetes component
+[10.3.0.20] [kube] Successfully installed Kubernetes component
+[10.3.0.10] [kube] Successfully installed Kubernetes component
+[10.3.0.21] [kube] Successfully installed Kubernetes component
+[10.3.0.12] [kube] Successfully installed Kubernetes component
+[10.3.0.11] [kube] Successfully installed Kubernetes component
+[10.3.0.10] [kubeadm-init] Initializing master0
+[10.3.0.10] [kubeadm-init] Successfully initialized master0
+[10.3.0.10] [network] Add the flannel network plugin
+[10.3.0.20] [kubeadm] Joining worker nodes
+[10.3.0.11] [kubeadm-join] Joining master nodes
+[10.3.0.12] [kubeadm-join] Joining master nodes
+[10.3.0.21] [kubeadm] Joining worker nodes
+[10.3.0.20] [kubeadm] Successfully joined worker nodes
+[10.3.0.21] [kubeadm] Successfully joined worker nodes
+[10.3.0.12] [kubeadm-join] Successfully joined master nodes
+[10.3.0.11] [kubeadm-join] Successfully joined master nodes
+[10.3.0.10] [check] Waiting for all nodes to become ready. This can take up to 6m0s
+
+NAME        STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
+10.3.0.10   Ready    master   65s   v1.17.9   10.3.0.10     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.11   Ready    master   22s   v1.17.9   10.3.0.11     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.12   Ready    master   22s   v1.17.9   10.3.0.12     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.20   Ready    <none>   24s   v1.17.9   10.3.0.20     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.21   Ready    <none>   24s   v1.17.9   10.3.0.21     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+
+Kubernetes High-Availability cluster deployment completed
 ```
 
 
@@ -95,11 +144,11 @@ NAME        STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMA
 
 感谢：
 
-[cobra](github.com/spf13/cobra): 应用cil框架采用cobra
+[cobra]( https://github.com/spf13/cobra ): 应用cil框架采用cobra
 
-[kubeadm](<https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/cmd/phases/workflow/doc.go>): 子命令工作流采用了kubeadm workflow模块，可以单独执行每一个子命令流程
+[kubeadm]( https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/cmd/phases/workflow/doc.go ): 子命令工作流采用了kubeadm workflow模块，可以单独执行每一个子命令流程
 
-[kubespray](https://github.com/kubernetes-sigs/kubespray/blob/master/docs/ha-mode.md): 高可用配置直接使用了kubespray项目的配置
+[kubespray]( https://github.com/kubernetes-sigs/kubespray/blob/master/docs/ha-mode.md ): 高可用配置直接使用了kubespray项目的配置
 
 
 
@@ -107,4 +156,5 @@ TODO
 
 - [ ] calico网络组件支持
 - [ ] 增加节点功能
-- [ ] 离线部署
+- [x] 离线部署
+- [ ] 自定义证书过期时间
