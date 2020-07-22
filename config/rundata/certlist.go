@@ -3,37 +3,46 @@ package rundata
 import (
 	"crypto"
 	"crypto/x509"
+	"fmt"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"net"
+	"time"
+
 	"github.com/pkg/errors"
-	"github.com/yuyicai/kubei/config/constants"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	certutil "k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	kubeadmpkiutil "k8s.io/kubernetes/cmd/kubeadm/app/util/pkiutil"
-	"time"
+	"k8s.io/kubernetes/cmd/kubeadm/app/features"
+	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
+	kubeconfigutil "k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
 
+	"github.com/yuyicai/kubei/config/constants"
 	pkiutil "github.com/yuyicai/kubei/pkg/util/pki"
 )
 
-type ConfigMutatorsFunc func(*kubeadmapi.InitConfiguration, *pkiutil.CertConfig) error
+type ConfigMutatorsFunc func(*Node, *kubeadmapi.InitConfiguration, *pkiutil.CertConfig) error
 
 // Cert represents a certificate that will create to function properly.
 type Cert struct {
-	Name     string
-	LongName string
-	BaseName string
-	CAName   string
-	Cert     *x509.Certificate
-	Key      crypto.Signer
+	Name         string
+	LongName     string
+	BaseName     string
+	CAName       string
+	IsKubeConfig bool
+	Cert         *x509.Certificate
+	Key          crypto.Signer
 	// Some attributes will depend on the InitConfiguration, only known at runtime.
 	// These functions will be run in series, passed both the InitConfiguration and a cert Config.
 	ConfigMutators []ConfigMutatorsFunc
 	Config         pkiutil.CertConfig
+	KubeConfig     clientcmdapi.Config
 }
 
 // GetConfig returns the definition for the given cert given the provided InitConfiguration
-func (c *Cert) GetConfig(ic *kubeadmapi.InitConfiguration) (*pkiutil.CertConfig, error) {
+func (c *Cert) GetConfig(node *Node, ic *kubeadmapi.InitConfiguration) (*pkiutil.CertConfig, error) {
 	for _, f := range c.ConfigMutators {
-		if err := f(ic, &c.Config); err != nil {
+		if err := f(node, ic, &c.Config); err != nil {
 			return nil, err
 		}
 	}
@@ -43,8 +52,8 @@ func (c *Cert) GetConfig(ic *kubeadmapi.InitConfiguration) (*pkiutil.CertConfig,
 }
 
 // CreateFromCA makes and writes a certificate using the given CA cert and key.
-func (c *Cert) CreateFromCA(ic *kubeadmapi.InitConfiguration, caCert *x509.Certificate, caKey crypto.Signer) error {
-	cfg, err := c.GetConfig(ic)
+func (c *Cert) CreateFromCA(node *Node, ic *kubeadmapi.InitConfiguration, caCert *x509.Certificate, caKey crypto.Signer) error {
+	cfg, err := c.GetConfig(node, ic)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't get configuration for %q certificate", c.Name)
 	}
@@ -56,8 +65,8 @@ func (c *Cert) CreateFromCA(ic *kubeadmapi.InitConfiguration, caCert *x509.Certi
 }
 
 // CreateAsCA creates a certificate authority, writing the files to disk and also returning the created CA so it can be used to sign child certs.
-func (c *Cert) CreateAsCA(ic *kubeadmapi.InitConfiguration) error {
-	cfg, err := c.GetConfig(ic)
+func (c *Cert) CreateAsCA(node *Node, ic *kubeadmapi.InitConfiguration) error {
+	cfg, err := c.GetConfig(node, ic)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't get configuration for %q CA certificate", c.Name)
 	}
@@ -69,11 +78,38 @@ func (c *Cert) CreateAsCA(ic *kubeadmapi.InitConfiguration) error {
 	return nil
 }
 
+func (c *Cert) CreateKubeConfig(ic *kubeadmapi.InitConfiguration, caCert *x509.Certificate) error {
+
+	if !c.IsKubeConfig {
+		return nil
+	}
+
+	encodedClientKey, err := pkiutil.EncodePrivateKeyPEM(c.Key)
+	if err != nil {
+		return err
+	}
+
+	controlPlaneEndpoint, err := kubeadmutil.GetControlPlaneEndpoint(ic.ControlPlaneEndpoint, &ic.LocalAPIEndpoint)
+	if err != nil {
+		return err
+	}
+
+	c.KubeConfig = *kubeconfigutil.CreateWithCerts(
+		controlPlaneEndpoint,
+		ic.ClusterName,
+		c.Name,
+		pkiutil.EncodeCertPEM(caCert),
+		encodedClientKey,
+		pkiutil.EncodeCertPEM(c.Cert),
+	)
+	return nil
+}
+
 // CertificateTree is represents a one-level-deep tree, mapping a CA to the certs that depend on it.
 type CertificateTree map[*Cert]Certificates
 
 // CreateTree creates the CAs, certs signed by the CAs.
-func (t CertificateTree) CreateTree(ic *kubeadmapi.InitConfiguration, notAfterTime time.Duration) error {
+func (t CertificateTree) CreateTree(node *Node, ic *kubeadmapi.InitConfiguration, notAfterTime time.Duration) error {
 	for ca, leaves := range t {
 		if ca.Cert == nil {
 
@@ -83,16 +119,32 @@ func (t CertificateTree) CreateTree(ic *kubeadmapi.InitConfiguration, notAfterTi
 				ca.Config.NotAfterTime = notAfterTime
 			}
 
-			if err := ca.CreateAsCA(ic); err != nil {
+			if err := ca.CreateAsCA(node, ic); err != nil {
 				return err
 			}
 		}
 
 		for _, leaf := range leaves {
 			leaf.Config.NotAfterTime = notAfterTime
-			if err := leaf.CreateFromCA(ic, ca.Cert, ca.Key); err != nil {
+			if err := leaf.CreateFromCA(node, ic, ca.Cert, ca.Key); err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func (t CertificateTree) CreateKubeConfig(ic *kubeadmapi.InitConfiguration) error {
+	for ca, certs := range t {
+		if ca.Name == "ca" {
+			for _, cert := range certs {
+				if cert.IsKubeConfig {
+					if err := cert.CreateKubeConfig(ic, ca.Cert); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
 		}
 	}
 	return nil
@@ -157,7 +209,7 @@ var (
 			},
 		},
 		ConfigMutators: []ConfigMutatorsFunc{
-			makeAltNamesMutator(kubeadmpkiutil.GetAPIServerAltNames),
+			makeAltNamesMutator(GetAPIServerAltNames),
 		},
 	}
 	// CertKubeletClient is the definition of the cert used by the API server to access the kubelet.
@@ -224,7 +276,7 @@ var (
 			},
 		},
 		ConfigMutators: []ConfigMutatorsFunc{
-			makeAltNamesMutator(kubeadmpkiutil.GetEtcdAltNames),
+			makeAltNamesMutator(GetEtcdAltNames),
 			setCommonNameToNodeName(),
 		},
 	}
@@ -240,7 +292,7 @@ var (
 			},
 		},
 		ConfigMutators: []ConfigMutatorsFunc{
-			makeAltNamesMutator(kubeadmpkiutil.GetEtcdPeerAltNames),
+			makeAltNamesMutator(GetEtcdPeerAltNames),
 			setCommonNameToNodeName(),
 		},
 	}
@@ -272,6 +324,71 @@ var (
 			},
 		},
 	}
+
+	// CertAPIServerKubeletClient is the definition of the cert used by the kubelet to access the API server.
+	CertAPIServerKubeletClient = Cert{
+		Name:         "kubelet",
+		LongName:     "certificate for the kubelet to access the API server",
+		BaseName:     kubeadmconstants.KubeletBaseConfigurationConfigMapKey,
+		CAName:       "ca",
+		IsKubeConfig: true,
+		Config: pkiutil.CertConfig{
+			Config: certutil.Config{
+				CommonName:   kubeadmconstants.APIServerKubeletClientCertCommonName,
+				Organization: []string{kubeadmconstants.NodesGroup},
+				Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			},
+		},
+		ConfigMutators: []ConfigMutatorsFunc{
+			setCommonNameToKubelet(),
+		},
+	}
+
+	// CertAPIServerKubeletClient is the definition of the cert used by the kubelet to access the API server.
+	CertAPIServerControllerManagerClient = Cert{
+		Name:         "controller-manager",
+		LongName:     "certificate for the kube-controller-manager to access the API server",
+		BaseName:     kubeadmconstants.KubeControllerManager,
+		CAName:       "ca",
+		IsKubeConfig: true,
+		Config: pkiutil.CertConfig{
+			Config: certutil.Config{
+				CommonName: kubeadmconstants.ControllerManagerUser,
+				Usages:     []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			},
+		},
+	}
+
+	// CertAPIServerKubeletClient is the definition of the cert used by the kubelet to access the API server.
+	CertAPIServerSchedulerClient = Cert{
+		Name:         "scheduler",
+		LongName:     "certificate for the kube-scheduler to access the API server",
+		BaseName:     kubeadmconstants.KubeScheduler,
+		CAName:       "ca",
+		IsKubeConfig: true,
+		Config: pkiutil.CertConfig{
+			Config: certutil.Config{
+				CommonName: kubeadmconstants.SchedulerUser,
+				Usages:     []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			},
+		},
+	}
+
+	// CertAPIServerKubeletClient is the definition of the cert used by the kubelet to access the API server.
+	CertAPIServerAdminClient = Cert{
+		Name:         "admin",
+		LongName:     "certificate for the kube-admin to access the API server",
+		BaseName:     "admin",
+		CAName:       "ca",
+		IsKubeConfig: true,
+		Config: pkiutil.CertConfig{
+			Config: certutil.Config{
+				CommonName:   "kubernetes-admin",
+				Organization: []string{kubeadmconstants.SystemPrivilegedGroup},
+				Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			},
+		},
+	}
 )
 
 // Certificates is a list of Certificates
@@ -279,25 +396,46 @@ type Certificates []*Cert
 
 // GetDefaultCertList
 func GetDefaultCertList() Certificates {
+	certRootCA := CertRootCA
+	certAPIServer := CertAPIServer
+	certKubeletClient := CertKubeletClient
+	certAPIServerControllerManagerClient := CertAPIServerControllerManagerClient
+	certAPIServerSchedulerClient := CertAPIServerSchedulerClient
+	certAPIServerAdminClient := CertAPIServerAdminClient
+	certAPIServerKubeletClient := CertAPIServerKubeletClient
+	// Front Proxy certs
+	certFrontProxyCA := CertFrontProxyCA
+	certFrontProxyClient := CertFrontProxyClient
+	// etcd certs
+	certEtcdCA := CertEtcdCA
+	certEtcdServer := CertEtcdServer
+	certEtcdPeer := CertEtcdPeer
+	certEtcdHealthcheck := CertEtcdHealthcheck
+	certEtcdAPIClient := CertEtcdAPIClient
+
 	return Certificates{
-		&CertRootCA,
-		&CertAPIServer,
-		&CertKubeletClient,
+		&certRootCA,
+		&certAPIServer,
+		&certKubeletClient,
+		&certAPIServerControllerManagerClient,
+		&certAPIServerSchedulerClient,
+		&certAPIServerAdminClient,
+		&certAPIServerKubeletClient,
 		// Front Proxy certs
-		&CertFrontProxyCA,
-		&CertFrontProxyClient,
+		&certFrontProxyCA,
+		&certFrontProxyClient,
 		// etcd certs
-		&CertEtcdCA,
-		&CertEtcdServer,
-		&CertEtcdPeer,
-		&CertEtcdHealthcheck,
-		&CertEtcdAPIClient,
+		&certEtcdCA,
+		&certEtcdServer,
+		&certEtcdPeer,
+		&certEtcdHealthcheck,
+		&certEtcdAPIClient,
 	}
 }
 
-func makeAltNamesMutator(f func(*kubeadmapi.InitConfiguration) (*certutil.AltNames, error)) ConfigMutatorsFunc {
-	return func(mc *kubeadmapi.InitConfiguration, cc *pkiutil.CertConfig) error {
-		altNames, err := f(mc)
+func makeAltNamesMutator(f func(*Node, *kubeadmapi.InitConfiguration) (*certutil.AltNames, error)) ConfigMutatorsFunc {
+	return func(node *Node, mc *kubeadmapi.InitConfiguration, cc *pkiutil.CertConfig) error {
+		altNames, err := f(node, mc)
 		if err != nil {
 			return err
 		}
@@ -307,8 +445,134 @@ func makeAltNamesMutator(f func(*kubeadmapi.InitConfiguration) (*certutil.AltNam
 }
 
 func setCommonNameToNodeName() ConfigMutatorsFunc {
-	return func(mc *kubeadmapi.InitConfiguration, cc *pkiutil.CertConfig) error {
-		cc.CommonName = mc.NodeRegistration.Name
+	return func(node *Node, mc *kubeadmapi.InitConfiguration, cc *pkiutil.CertConfig) error {
+		cc.CommonName = node.Name
 		return nil
 	}
+}
+
+func setCommonNameToKubelet() ConfigMutatorsFunc {
+	return func(node *Node, mc *kubeadmapi.InitConfiguration, cc *pkiutil.CertConfig) error {
+		cc.CommonName = fmt.Sprintf("%s%s", kubeadmconstants.NodesUserPrefix, node.Name)
+		return nil
+	}
+}
+
+// GetAPIServerAltNames builds an AltNames object for to be used when generating apiserver certificate
+func GetAPIServerAltNames(node *Node, cfg *kubeadmapi.InitConfiguration) (*certutil.AltNames, error) {
+	// host address
+	host := net.ParseIP(node.HostInfo.Host)
+	if host == nil {
+		return nil, errors.Errorf("error parsing node host %v: is not a valid textual representation of an IP address",
+			node.HostInfo.Host)
+	}
+
+	internalAPIServerVirtualIP, err := kubeadmconstants.GetAPIServerVirtualIP(cfg.Networking.ServiceSubnet, features.Enabled(cfg.FeatureGates, features.IPv6DualStack))
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get first IP address from the given CIDR: %v", cfg.Networking.ServiceSubnet)
+	}
+
+	// create AltNames with defaults DNSNames/IPs
+	altNames := &certutil.AltNames{
+		DNSNames: []string{
+			//node.Name,
+			"kubernetes",
+			"kubernetes.default",
+			"kubernetes.default.svc",
+			fmt.Sprintf("kubernetes.default.svc.%s", cfg.Networking.DNSDomain),
+		},
+		IPs: []net.IP{
+			internalAPIServerVirtualIP,
+			host,
+		},
+	}
+
+	// add cluster controlPlaneEndpoint if present (dns or ip)
+	if len(cfg.ControlPlaneEndpoint) > 0 {
+		if host, _, err := kubeadmutil.ParseHostPort(cfg.ControlPlaneEndpoint); err == nil {
+			if ip := net.ParseIP(host); ip != nil {
+				altNames.IPs = append(altNames.IPs, ip)
+			} else {
+				altNames.DNSNames = append(altNames.DNSNames, host)
+			}
+		} else {
+			return nil, errors.Wrapf(err, "error parsing cluster controlPlaneEndpoint %q", cfg.ControlPlaneEndpoint)
+		}
+	}
+
+	exAltNames := append(cfg.APIServer.CertSANs, node.Name)
+	appendSANsToAltNames(altNames, exAltNames, kubeadmconstants.APIServerCertName)
+
+	return altNames, nil
+}
+
+// appendSANsToAltNames parses SANs from as list of strings and adds them to altNames for use on a specific cert
+// altNames is passed in with a pointer, and the struct is modified
+// valid IP address strings are parsed and added to altNames.IPs as net.IP's
+// RFC-1123 compliant DNS strings are added to altNames.DNSNames as strings
+// RFC-1123 compliant wildcard DNS strings are added to altNames.DNSNames as strings
+// certNames is used to print user facing warnings and should be the name of the cert the altNames will be used for
+func appendSANsToAltNames(altNames *certutil.AltNames, SANs []string, certName string) {
+	for _, altname := range SANs {
+		if ip := net.ParseIP(altname); ip != nil {
+			altNames.IPs = append(altNames.IPs, ip)
+		} else if len(validation.IsDNS1123Subdomain(altname)) == 0 {
+			altNames.DNSNames = append(altNames.DNSNames, altname)
+		} else if len(validation.IsWildcardDNS1123Subdomain(altname)) == 0 {
+			altNames.DNSNames = append(altNames.DNSNames, altname)
+		} else {
+			fmt.Printf(
+				"[certificates] WARNING: '%s' was not added to the '%s' SAN, because it is not a valid IP or RFC-1123 compliant DNS entry\n",
+				altname,
+				certName,
+			)
+		}
+	}
+}
+
+// GetEtcdPeerAltNames builds an AltNames object for generating the etcd peer certificate.
+// Hostname and `API.AdvertiseAddress` are included if the user chooses to promote the single node etcd cluster into a multi-node one (stacked etcd).
+// The user can override the listen address with `Etcd.ExtraArgs` and add SANs with `Etcd.PeerCertSANs`.
+func GetEtcdPeerAltNames(node *Node, cfg *kubeadmapi.InitConfiguration) (*certutil.AltNames, error) {
+	return getAltNames(node, cfg, kubeadmconstants.EtcdPeerCertName)
+}
+
+// GetEtcdAltNames builds an AltNames object for generating the etcd server certificate.
+// `advertise address` and localhost are included in the SAN since this is the interfaces the etcd static pod listens on.
+// The user can override the listen address with `Etcd.ExtraArgs` and add SANs with `Etcd.ServerCertSANs`.
+func GetEtcdAltNames(node *Node, cfg *kubeadmapi.InitConfiguration) (*certutil.AltNames, error) {
+	return getAltNames(node, cfg, kubeadmconstants.EtcdServerCertName)
+}
+
+// getAltNames builds an AltNames object with the cfg and certName.
+func getAltNames(node *Node, cfg *kubeadmapi.InitConfiguration, certName string) (*certutil.AltNames, error) {
+	// host address
+	host := net.ParseIP(node.HostInfo.Host)
+	if host == nil {
+		return nil, errors.Errorf("error parsing node host %v: is not a valid textual representation of an IP address",
+			node.HostInfo.Host)
+	}
+
+	// create AltNames with defaults DNSNames/IPs
+	altNames := &certutil.AltNames{
+		DNSNames: []string{"localhost"},
+		IPs:      []net.IP{host, net.IPv4(127, 0, 0, 1), net.IPv6loopback},
+	}
+
+	if cfg.Etcd.Local != nil {
+		if certName == kubeadmconstants.EtcdServerCertName {
+			appendSANsToAltNames(altNames, cfg.Etcd.Local.ServerCertSANs, kubeadmconstants.EtcdServerCertName)
+		} else if certName == kubeadmconstants.EtcdPeerCertName {
+			exAltNames := append(cfg.Etcd.Local.PeerCertSANs, node.Name)
+			appendSANsToAltNames(altNames, exAltNames, kubeadmconstants.EtcdPeerCertName)
+		}
+	}
+
+	if certName == kubeadmconstants.EtcdServerCertName {
+		appendSANsToAltNames(altNames, []string{node.Name}, kubeadmconstants.EtcdServerCertName)
+	} else if certName == kubeadmconstants.EtcdPeerCertName {
+		appendSANsToAltNames(altNames, []string{node.Name}, kubeadmconstants.EtcdPeerCertName)
+	}
+
+	return altNames, nil
 }

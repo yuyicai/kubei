@@ -20,19 +20,36 @@ func CreateCert(c *rundata.Cluster) error {
 
 	if err := c.RunOnFirstMaster(func(node *rundata.Node) error {
 		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
+		c.Kubeadm.NodeRegistration.Name = node.Name
 		if err := CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, constants.DefaultCertNotAfterTime, certTree); err != nil {
 			return err
 		}
 		certTree = node.CertificateTree
-		return nil
+
+		return node.CertificateTree.CreateKubeConfig(&c.Kubeadm.InitConfiguration)
+
 	}); err != nil {
 		return err
 	}
 
-	return c.RunOnOtherMasters(func(node *rundata.Node) error {
+	if err := c.RunOnOtherMasters(func(node *rundata.Node) error {
 		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
-		return CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, constants.DefaultCertNotAfterTime, certTree)
-	})
+
+		//c.Mutex.Lock()
+		//c.Kubeadm.NodeRegistration.Name = node.Name
+
+		if err := CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, constants.DefaultCertNotAfterTime, certTree); err != nil {
+			return err
+		}
+		//c.Mutex.Unlock()
+
+		return node.CertificateTree.CreateKubeConfig(&c.Kubeadm.InitConfiguration)
+
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CreatePKIAssets will create all PKI assets necessary.
@@ -57,7 +74,7 @@ func CreatePKIAssets(node *rundata.Node, cfg *kubeadmapi.InitConfiguration, notA
 		return err
 	}
 
-	if err := node.CertificateTree.CreateTree(cfg, notAfterTime); err != nil {
+	if err := node.CertificateTree.CreateTree(node, cfg, notAfterTime); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error creating PKI assets on %s", node.HostInfo.Host))
 	}
 
@@ -78,28 +95,28 @@ func CreateServiceAccountKeyAndPublicKey(keyType x509.PublicKeyAlgorithm) (crypt
 	return key, key.Public(), nil
 }
 
-// CreateCACertAndKey generates and writes out a given certificate authority.
-func CreateCACertAndKey(certSpec *rundata.Cert, cfg *kubeadmapi.InitConfiguration, notAfterTime time.Duration) error {
-	if certSpec.CAName != "" {
-		return errors.Errorf("this function should only be used for CAs, but cert %s has CA %s", certSpec.Name, certSpec.CAName)
-	}
-
-	if notAfterTime < constants.DefaultCertNotAfterTime {
-		notAfterTime = constants.DefaultCertNotAfterTime
-	}
-	certSpec.Config.NotAfterTime = notAfterTime
-
-	klog.V(1).Infof("creating a new certificate authority for %s", certSpec.Name)
-
-	return certSpec.CreateAsCA(cfg)
-}
-
-// CreateCertAndKeyWithCA
-func CreateCertAndKeyWithCA(certSpec *rundata.Cert, caCertSpec *rundata.Cert, cfg *kubeadmapi.InitConfiguration,
-	caCert *x509.Certificate, caKey crypto.Signer, notAfterTime time.Duration) error {
-	if certSpec.CAName != caCertSpec.Name {
-		return errors.Errorf("expected CAname for %s to be %q, but was %s", certSpec.Name, certSpec.CAName, caCertSpec.Name)
-	}
-	certSpec.Config.NotAfterTime = notAfterTime
-	return certSpec.CreateFromCA(cfg, caCert, caKey)
-}
+//// CreateCACertAndKey generates and writes out a given certificate authority.
+//func CreateCACertAndKey(certSpec *rundata.Cert, cfg *kubeadmapi.InitConfiguration, notAfterTime time.Duration) error {
+//	if certSpec.CAName != "" {
+//		return errors.Errorf("this function should only be used for CAs, but cert %s has CA %s", certSpec.Name, certSpec.CAName)
+//	}
+//
+//	if notAfterTime < constants.DefaultCertNotAfterTime {
+//		notAfterTime = constants.DefaultCertNotAfterTime
+//	}
+//	certSpec.Config.NotAfterTime = notAfterTime
+//
+//	klog.V(1).Infof("creating a new certificate authority for %s", certSpec.Name)
+//
+//	return certSpec.CreateAsCA(cfg)
+//}
+//
+//// CreateCertAndKeyWithCA
+//func CreateCertAndKeyWithCA(certSpec *rundata.Cert, caCertSpec *rundata.Cert, cfg *kubeadmapi.InitConfiguration,
+//	caCert *x509.Certificate, caKey crypto.Signer, notAfterTime time.Duration) error {
+//	if certSpec.CAName != caCertSpec.Name {
+//		return errors.Errorf("expected CAname for %s to be %q, but was %s", certSpec.Name, certSpec.CAName, caCertSpec.Name)
+//	}
+//	certSpec.Config.NotAfterTime = notAfterTime
+//	return certSpec.CreateFromCA(cfg, caCert, caKey)
+//}
