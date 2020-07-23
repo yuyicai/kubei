@@ -18,7 +18,7 @@ import (
 	kubeconfigutil "k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
 
 	"github.com/yuyicai/kubei/config/constants"
-	pkiutil "github.com/yuyicai/kubei/pkg/util/pki"
+	pkiutil "github.com/yuyicai/kubei/pkg/pki"
 )
 
 type ConfigMutatorsFunc func(*Node, *kubeadmapi.InitConfiguration, *pkiutil.CertConfig) error
@@ -329,7 +329,7 @@ var (
 	CertAPIServerKubeletClient = Cert{
 		Name:         "kubelet",
 		LongName:     "certificate for the kubelet to access the API server",
-		BaseName:     kubeadmconstants.KubeletBaseConfigurationConfigMapKey,
+		BaseName:     kubeadmconstants.KubeletKubeConfigFileName,
 		CAName:       "ca",
 		IsKubeConfig: true,
 		Config: pkiutil.CertConfig{
@@ -348,7 +348,7 @@ var (
 	CertAPIServerControllerManagerClient = Cert{
 		Name:         "controller-manager",
 		LongName:     "certificate for the kube-controller-manager to access the API server",
-		BaseName:     kubeadmconstants.KubeControllerManager,
+		BaseName:     kubeadmconstants.ControllerManagerKubeConfigFileName,
 		CAName:       "ca",
 		IsKubeConfig: true,
 		Config: pkiutil.CertConfig{
@@ -363,7 +363,7 @@ var (
 	CertAPIServerSchedulerClient = Cert{
 		Name:         "scheduler",
 		LongName:     "certificate for the kube-scheduler to access the API server",
-		BaseName:     kubeadmconstants.KubeScheduler,
+		BaseName:     kubeadmconstants.SchedulerKubeConfigFileName,
 		CAName:       "ca",
 		IsKubeConfig: true,
 		Config: pkiutil.CertConfig{
@@ -378,7 +378,7 @@ var (
 	CertAPIServerAdminClient = Cert{
 		Name:         "admin",
 		LongName:     "certificate for the kube-admin to access the API server",
-		BaseName:     "admin",
+		BaseName:     kubeadmconstants.AdminKubeConfigFileName,
 		CAName:       "ca",
 		IsKubeConfig: true,
 		Config: pkiutil.CertConfig{

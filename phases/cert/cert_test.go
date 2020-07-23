@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/yuyicai/kubei/config/rundata"
-	"github.com/yuyicai/kubei/pkg/util/pki"
+	"github.com/yuyicai/kubei/pkg/pki"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	"strconv"
 	"strings"

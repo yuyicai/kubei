@@ -50,5 +50,9 @@ func runCert(c workflow.RunData) error {
 		return err
 	}
 
-	return certphases.CreateCert(cluster)
+	if err := certphases.CreateCert(cluster); err != nil {
+		return err
+	}
+
+	return certphases.SendCert(cluster)
 }
