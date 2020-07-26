@@ -97,7 +97,7 @@ func (c *Cert) CreateKubeConfig(ic *kubeadmapi.InitConfiguration, caCert *x509.C
 	c.KubeConfig = *kubeconfigutil.CreateWithCerts(
 		controlPlaneEndpoint,
 		ic.ClusterName,
-		c.Name,
+		c.Config.CommonName,
 		pkiutil.EncodeCertPEM(caCert),
 		encodedClientKey,
 		pkiutil.EncodeCertPEM(c.Cert),
@@ -475,13 +475,16 @@ func GetAPIServerAltNames(node *Node, cfg *kubeadmapi.InitConfiguration) (*certu
 	// create AltNames with defaults DNSNames/IPs
 	altNames := &certutil.AltNames{
 		DNSNames: []string{
-			//node.Name,
+			"localhost",
 			"kubernetes",
 			"kubernetes.default",
 			"kubernetes.default.svc",
+			"kubernetes.default.svc.cluster.local",
 			fmt.Sprintf("kubernetes.default.svc.%s", cfg.Networking.DNSDomain),
 		},
 		IPs: []net.IP{
+			net.IPv4(127, 0, 0, 1),
+			net.IPv6loopback,
 			internalAPIServerVirtualIP,
 			host,
 		},

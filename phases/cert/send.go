@@ -19,6 +19,10 @@ func SendCert(c *rundata.Cluster) error {
 
 func sendNodeCert(node *rundata.Node) error {
 
+	if err := node.Run("mkdir -p /etc/kubernetes/pki/etcd"); err != nil {
+		return err
+	}
+
 	certTree := node.CertificateTree
 
 	for ca, certs := range certTree {
@@ -27,14 +31,14 @@ func sendNodeCert(node *rundata.Node) error {
 		}
 
 		for _, cert := range certs {
-			if err := sendCert(node, cert); err != nil {
-				return err
-			}
-
 			if cert.IsKubeConfig {
 				if err := sendKubeConfig(node, cert); err != nil {
 					return err
 				}
+				continue
+			}
+			if err := sendCert(node, cert); err != nil {
+				return err
 			}
 		}
 	}
@@ -43,7 +47,7 @@ func sendNodeCert(node *rundata.Node) error {
 }
 
 func sendCert(node *rundata.Node, c *rundata.Cert) error {
-	// TODO mddir path for cert
+	// TODO set umask
 	// send cert
 	encodeCert := pki.EncodeCertPEM(c.Cert)
 	encodeCertBase64 := base64.StdEncoding.EncodeToString(encodeCert)
@@ -67,11 +71,11 @@ func sendKubeConfig(node *rundata.Node, c *rundata.Cert) error {
 	}
 	encodedKubeConfigBase64 := base64.StdEncoding.EncodeToString(encodedKubeConfig)
 
-	if c.Name == "admin" {
-		if err := node.Run(fmt.Sprintf("mkdir $HOME/.kube && echo %s | base64 -d > $HOME/.kube/config", encodedKubeConfigBase64)); err != nil {
-			return err
-		}
-	}
+	//if c.Name == "admin" {
+	//	if err := node.Run(fmt.Sprintf("mkdir -p $HOME/.kube && echo %s | base64 -d > $HOME/.kube/config", encodedKubeConfigBase64)); err != nil {
+	//		return err
+	//	}
+	//}
 
 	return node.Run(fmt.Sprintf("echo %s | base64 -d > /etc/kubernetes/%s", encodedKubeConfigBase64, c.BaseName))
 }
