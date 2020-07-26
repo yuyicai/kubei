@@ -3,6 +3,7 @@ package rundata
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
@@ -19,6 +20,7 @@ type Configuration struct {
 type Cluster struct {
 	*Kubei
 	Kubeadm *Kubeadm
+	Mutex   sync.Mutex
 }
 
 type Cluster1 struct {
@@ -44,6 +46,19 @@ func (c *Cluster) RunOnOtherMasters(f func(*Node) error) error {
 	}
 
 	return run(c.ClusterNodes.Masters[1:], f)
+}
+
+func (c *Cluster) RunOnOtherMastersOneByOne(f func(*Node) error) error {
+	if len(c.ClusterNodes.Masters) <= 1 {
+		return nil
+	}
+
+	for _, node := range c.ClusterNodes.Masters[1:] {
+		if err := runOne(node, f); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *Cluster) RunOnFirstMaster(f func(*Node) error) error {

@@ -45,6 +45,7 @@ func NewCmdInit(out io.Writer, initOptions *runOptions) *cobra.Command {
 	// initialize the workflow runner with the list of phases
 	initRunner.AppendPhase(initphases.NewContainerEnginePhase())
 	initRunner.AppendPhase(initphases.NewKubeComponentPhase())
+	initRunner.AppendPhase(initphases.NewCertPhase())
 	initRunner.AppendPhase(initphases.NewKubeadmPhase())
 
 	// sets the rundata builder function, that will be used by the runner
@@ -86,7 +87,7 @@ func newInitData(cmd *cobra.Command, args []string, options *runOptions, out io.
 	options.kubeadm.ApplyTo(clusterCfg.Kubeadm)
 
 	rundata.DefaultKubeiCfg(clusterCfg.Kubei)
-	rundata.DefaultkubeadmCfg(clusterCfg.Kubeadm)
+	rundata.DefaultkubeadmCfg(clusterCfg.Kubeadm, clusterCfg.Kubei)
 
 	initDatacfg := &runData{
 		cluster: clusterCfg,

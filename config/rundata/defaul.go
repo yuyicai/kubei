@@ -2,10 +2,18 @@ package rundata
 
 import "github.com/yuyicai/kubei/config/constants"
 
-func DefaultkubeadmCfg(k *Kubeadm) {
+func DefaultkubeadmCfg(k *Kubeadm, ki *Kubei) {
 	if k.LocalAPIEndpoint.BindPort == 0 {
 		k.LocalAPIEndpoint.BindPort = constants.DefaultAPIBindPort
 	}
+
+	setToEmptyString(&k.ClusterName, constants.DefaultClusterName)
+	setToEmptyString(&k.Networking.DNSDomain, "cluster.local")
+
+	if len(ki.ClusterNodes.Masters) > 0 {
+		setToEmptyString(&k.LocalAPIEndpoint.AdvertiseAddress, ki.ClusterNodes.Masters[0].HostInfo.Host)
+	}
+
 }
 
 func DefaultKubeiCfg(k *Kubei) {
@@ -114,5 +122,11 @@ func dockerCfg(d *Docker) {
 
 	if d.StorageDriver == "" {
 		d.StorageDriver = constants.DockerDefaultStorageDriver
+	}
+}
+
+func setToEmptyString(sp *string, s string) {
+	if *sp == "" {
+		*sp = s
 	}
 }

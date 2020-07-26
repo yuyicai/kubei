@@ -84,7 +84,7 @@ func newResetData(cmd *cobra.Command, args []string, options *runOptions, out io
 	options.kubeadm.ApplyTo(clusterCfg.Kubeadm)
 
 	rundata.DefaultKubeiCfg(clusterCfg.Kubei)
-	rundata.DefaultkubeadmCfg(clusterCfg.Kubeadm)
+	rundata.DefaultkubeadmCfg(clusterCfg.Kubeadm, clusterCfg.Kubei)
 
 	initDatacfg := &runData{
 		cluster: clusterCfg,

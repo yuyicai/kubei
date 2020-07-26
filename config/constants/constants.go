@@ -30,8 +30,10 @@ const (
 	DefaultControlPlaneEndpoint = "apiserver.k8s.local:6443"
 	DefaultImageRepository      = "k8s.gcr.io"
 	DefaultAPIBindPort          = 6443
+	DefaultClusterName          = "kubernetes"
 	DefaultWaitNodeInterval     = 2 * time.Second
 	DefaultWaitNodeTimeout      = 6 * time.Minute
+	DefaultCertNotAfterTime     = 24 * time.Hour * 365 * 10
 
 	// networking plugin
 	DefaulNetworkPlugin           = "flannel"

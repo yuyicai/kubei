@@ -84,9 +84,12 @@ func (c *ClusterNodes) LogRun(f func(node *Node) error) error {
 	return g.Wait()
 }
 
+// +k8s:deepcopy-gen=false
+
 type Node struct {
 	SSH                   *ssh.Client
 	HostInfo              HostInfo
+	CertificateTree       CertificateTree
 	Name                  string
 	PackageManagementType string
 	InstallType           string
