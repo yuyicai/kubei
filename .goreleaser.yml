@@ -1,6 +1,6 @@
 before:
   hooks:
-    - go mod tidy
+    - go mod download
     - go generate ./...
 builds:
 - env:
@@ -9,6 +9,9 @@ builds:
   - linux
   - darwin
   - windows
+  goarch:
+  - amd64
+  - arm64
   ldflags:
   - -s -w -X github.com/yuyicai/kubei/cmd/version.gitVersion={{.Version}}
     -X github.com/yuyicai/kubei/cmd/version.gitCommit={{.Commit}}
@@ -16,12 +19,6 @@ builds:
     -X github.com/yuyicai/kubei/cmd/version.gitMajor={{.Major}}
     -X github.com/yuyicai/kubei/cmd/version.gitMinor={{.Minor}}
     -X github.com/yuyicai/kubei/cmd/version.gitURL={{.GitURL}}
-archives:
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
 snapshot:
