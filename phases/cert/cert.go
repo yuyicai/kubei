@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yuyicai/kubei/config/constants"
 	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/pkg/pki"
 	"k8s.io/klog"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -93,6 +94,22 @@ func CreateServiceAccountKeyAndPublicKey(keyType x509.PublicKeyAlgorithm) (crypt
 	fmt.Printf("[certs] Generating %q key and public key\n", kubeadmconstants.ServiceAccountKeyBaseName)
 
 	return key, key.Public(), nil
+}
+
+func CreateEncodeServiceAccountKeyAndPublicKey(keyType x509.PublicKeyAlgorithm) (encodedPrivatKey, encodedPublicKey []byte, err error) {
+	privatKey, publicKey, err := CreateServiceAccountKeyAndPublicKey(keyType)
+	if err != nil {
+		return nil, nil, err
+	}
+	encodedPrivatKey, err = pki.EncodePrivateKeyPEM(privatKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	encodedPublicKey, err = pki.EncodePublicKeyPEM(publicKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return
 }
 
 //// CreateCACertAndKey generates and writes out a given certificate authority.

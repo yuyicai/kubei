@@ -1,6 +1,7 @@
 package cert
 
 import (
+	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"github.com/yuyicai/kubei/config/rundata"
@@ -11,13 +12,25 @@ import (
 )
 
 func SendCert(c *rundata.Cluster) error {
+	encodedPrivatKey, encodedPublicKey, err := CreateEncodeServiceAccountKeyAndPublicKey(x509.RSA)
+	if err != nil {
+		return err
+	}
+
+	encodedPrivatKeyBase64 := base64.StdEncoding.EncodeToString(encodedPrivatKey)
+	encodedPublicKeyBase64 := base64.StdEncoding.EncodeToString(encodedPublicKey)
+
 	return c.RunOnMasters(func(node *rundata.Node) error {
-		return sendNodeCert(node)
+		if err := sendServiceAccountKeyAndPublicKey(node, encodedPrivatKeyBase64, encodedPublicKeyBase64); err != nil {
+			return err
+		}
+
+		return sendCertAndKubeConfig(node)
 	})
 
 }
 
-func sendNodeCert(node *rundata.Node) error {
+func sendCertAndKubeConfig(node *rundata.Node) error {
 
 	if err := node.Run("mkdir -p /etc/kubernetes/pki/etcd"); err != nil {
 		return err
@@ -78,6 +91,13 @@ func sendKubeConfig(node *rundata.Node, c *rundata.Cert) error {
 	//}
 
 	return node.Run(fmt.Sprintf("echo %s | base64 -d > /etc/kubernetes/%s", encodedKubeConfigBase64, c.BaseName))
+}
+
+func sendServiceAccountKeyAndPublicKey(node *rundata.Node, privatKey, publicKey string) error {
+	if err := node.Run(fmt.Sprintf("echo %s | base64 -d > /etc/kubernetes/pki/%s", privatKey, "sa.key")); err != nil {
+		return err
+	}
+	return node.Run(fmt.Sprintf("echo %s | base64 -d > /etc/kubernetes/pki/%s", publicKey, "sa.pub"))
 }
 
 // EncodeKubeConfig serializes the config to yaml.
