@@ -4,11 +4,9 @@
 
 `kubei`原理：通过ssh连接到集群服务器，进行容器引擎安装、kubernetes组件安装、主机初始化配置、本地负载均衡器部署、调用kubeadm初始化集群master、调用kubeadm将主机加入节点
 
-提供离线部署功能，解决部署k8s无法下载容器镜像问题
+提供离线部署功能，自定义证书过期时间
 
 支持使用普通用户（sudo用户）连接集群服务器进行安装部署，支持通过堡垒机连接集群服务器  
-
-![k8s-ha](./docs/images/kube-ha.svg)
 
 # 版本支持
 
@@ -44,7 +42,7 @@
 
 *etcd版本由kubeadm对于版本默认确定*
 
-
+![k8s-ha](./docs/images/kube-ha.svg)
 
 # 快速开始
 
@@ -81,55 +79,57 @@ https://github.com/yuyicai/kubei/releases
 部署过程及结果：
 
 ```
-[10.3.0.10] [preflight] Checking SSH connection
+[10.3.0.21] [preflight] Checking SSH connection
 [10.3.0.11] [preflight] Checking SSH connection
+[10.3.0.10] [preflight] Checking SSH connection
 [10.3.0.12] [preflight] Checking SSH connection
 [10.3.0.20] [preflight] Checking SSH connection
-[10.3.0.21] [preflight] Checking SSH connection
 [10.3.0.10] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
-[10.3.0.11] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
 [10.3.0.21] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
+[10.3.0.11] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
 [10.3.0.20] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
 [10.3.0.12] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
 [10.3.0.10] [container-engine] Installing Docker
-[10.3.0.11] [container-engine] Installing Docker
-[10.3.0.12] [container-engine] Installing Docker
 [10.3.0.20] [container-engine] Installing Docker
 [10.3.0.21] [container-engine] Installing Docker
+[10.3.0.11] [container-engine] Installing Docker
+[10.3.0.12] [container-engine] Installing Docker
 [10.3.0.10] [container-engine] Successfully installed Docker
+[10.3.0.21] [container-engine] Successfully installed Docker
 [10.3.0.11] [container-engine] Successfully installed Docker
 [10.3.0.12] [container-engine] Successfully installed Docker
 [10.3.0.20] [container-engine] Successfully installed Docker
-[10.3.0.21] [container-engine] Successfully installed Docker
 [10.3.0.10] [kube] Installing Kubernetes component
 [10.3.0.11] [kube] Installing Kubernetes component
-[10.3.0.12] [kube] Installing Kubernetes component
 [10.3.0.20] [kube] Installing Kubernetes component
+[10.3.0.12] [kube] Installing Kubernetes component
 [10.3.0.21] [kube] Installing Kubernetes component
-[10.3.0.20] [kube] Successfully installed Kubernetes component
 [10.3.0.10] [kube] Successfully installed Kubernetes component
 [10.3.0.21] [kube] Successfully installed Kubernetes component
+[10.3.0.20] [kube] Successfully installed Kubernetes component
 [10.3.0.12] [kube] Successfully installed Kubernetes component
 [10.3.0.11] [kube] Successfully installed Kubernetes component
+[10.3.0.10] [cert] Creating certificate
+[10.3.0.12] [cert] Creating certificate
+[10.3.0.11] [cert] Creating certificate
 [10.3.0.10] [kubeadm-init] Initializing master0
 [10.3.0.10] [kubeadm-init] Successfully initialized master0
 [10.3.0.10] [network] Add the flannel network plugin
-[10.3.0.20] [kubeadm] Joining worker nodes
-[10.3.0.11] [kubeadm-join] Joining master nodes
 [10.3.0.12] [kubeadm-join] Joining master nodes
-[10.3.0.21] [kubeadm] Joining worker nodes
-[10.3.0.20] [kubeadm] Successfully joined worker nodes
-[10.3.0.21] [kubeadm] Successfully joined worker nodes
+[10.3.0.21] [kubeadm-join] Joining worker nodes
+[10.3.0.20] [kubeadm-join] Joining worker nodes
+[10.3.0.11] [kubeadm-join] Joining master nodes
 [10.3.0.12] [kubeadm-join] Successfully joined master nodes
+[10.3.0.21] [kubeadm-join] Successfully joined worker nodes
+[10.3.0.20] [kubeadm-join] Successfully joined worker nodes
 [10.3.0.11] [kubeadm-join] Successfully joined master nodes
 [10.3.0.10] [check] Waiting for all nodes to become ready. This can take up to 6m0s
-
 NAME        STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
-10.3.0.10   Ready    master   65s   v1.17.9   10.3.0.10     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.11   Ready    master   22s   v1.17.9   10.3.0.11     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.12   Ready    master   22s   v1.17.9   10.3.0.12     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.20   Ready    <none>   24s   v1.17.9   10.3.0.20     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.21   Ready    <none>   24s   v1.17.9   10.3.0.21     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.10   Ready    master   56s   v1.17.9   10.3.0.10     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.11   Ready    master   28s   v1.17.9   10.3.0.11     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.12   Ready    master   28s   v1.17.9   10.3.0.12     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.20   Ready    <none>   11s   v1.17.9   10.3.0.20     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.21   Ready    <none>   11s   v1.17.9   10.3.0.21     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
 
 Kubernetes High-Availability cluster deployment completed
 ```
@@ -157,4 +157,4 @@ TODO
 - [ ] calico网络组件支持
 - [ ] 增加节点功能
 - [x] 离线部署
-- [ ] 自定义证书过期时间
+- [x] 自定义证书过期时间
