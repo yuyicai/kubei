@@ -402,7 +402,7 @@ func GetDefaultCertList() Certificates {
 	certAPIServerControllerManagerClient := CertAPIServerControllerManagerClient
 	certAPIServerSchedulerClient := CertAPIServerSchedulerClient
 	certAPIServerAdminClient := CertAPIServerAdminClient
-	certAPIServerKubeletClient := CertAPIServerKubeletClient
+	//certAPIServerKubeletClient := CertAPIServerKubeletClient
 	// Front Proxy certs
 	certFrontProxyCA := CertFrontProxyCA
 	certFrontProxyClient := CertFrontProxyClient
@@ -420,7 +420,7 @@ func GetDefaultCertList() Certificates {
 		&certAPIServerControllerManagerClient,
 		&certAPIServerSchedulerClient,
 		&certAPIServerAdminClient,
-		&certAPIServerKubeletClient,
+		//&certAPIServerKubeletClient,
 		// Front Proxy certs
 		&certFrontProxyCA,
 		&certFrontProxyClient,

@@ -94,6 +94,10 @@ func sendKubeConfig(node *rundata.Node, c *rundata.Cert) error {
 }
 
 func sendServiceAccountKeyAndPublicKey(node *rundata.Node, privatKey, publicKey string) error {
+	if err := node.Run("mkdir -p /etc/kubernetes/pki/etcd"); err != nil {
+		return err
+	}
+
 	if err := node.Run(fmt.Sprintf("echo %s | base64 -d > /etc/kubernetes/pki/%s", privatKey, "sa.key")); err != nil {
 		return err
 	}
