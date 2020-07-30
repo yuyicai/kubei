@@ -2,8 +2,6 @@ package preflight
 
 import (
 	"fmt"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"k8s.io/klog"
@@ -34,10 +32,6 @@ func check(node *rundata.Node, cfg *rundata.Kubei) error {
 	return nodesCheck(node, cfg)
 }
 
-func send(node *rundata.Node, cfg *rundata.Kubei) error {
-	return sendAndtar(path.Join("/tmp/.kubei", filepath.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
-}
-
 func jumpServerCheck(jumpServer *rundata.JumpServer) error {
 	if jumpServer.HostInfo.Host != "" && jumpServer.Client == nil {
 		hostInfo := jumpServer.HostInfo
@@ -56,11 +50,7 @@ func nodesCheck(node *rundata.Node, cfg *rundata.Kubei) error {
 		return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
 	}
 
-	if err := packageManagementTypeCheck(node); err != nil {
-		return err
-	}
-	return sendAndtar(path.Join("/tmp/.kubei", filepath.Base(cfg.OfflineFile)), cfg.OfflineFile, node)
-
+	return packageManagementTypeCheck(node)
 }
 
 func sshCheck(node *rundata.Node, jumpServer *rundata.JumpServer) error {
@@ -110,28 +100,4 @@ func packageManagementTypeCheck(node *rundata.Node) error {
 		return fmt.Errorf("[%s] [preflight] Unsupported this system", hostInfo.Host)
 	}
 	return nil
-}
-
-func sendAndtar(dstFile, srcFile string, node *rundata.Node) error {
-	if node.InstallType == constants.InstallTypeOffline && !node.IsSend {
-		if err := sendFile(dstFile, srcFile, node); err != nil {
-			return err
-		}
-		klog.Infof("[%s] [send] send pkg to %s, ", node.HostInfo.Host, dstFile)
-		if err := tar(dstFile, node); err != nil {
-			return fmt.Errorf("[%s] [tar] failed to Decompress the file %s: %v", node.HostInfo.Host, dstFile, err)
-		}
-		node.IsSend = true
-		return nil
-	}
-
-	return nil
-}
-
-func sendFile(dstFile, srcFile string, node *rundata.Node) error {
-	return node.SSH.SendFile(dstFile, srcFile)
-}
-
-func tar(file string, node *rundata.Node) error {
-	return node.Run(fmt.Sprintf("tar xf %s -C /tmp/.kubei", file))
 }
