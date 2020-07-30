@@ -45,6 +45,11 @@ func Execute() {
 	pflag.CommandLine.MarkHidden("logtostderr")
 	pflag.CommandLine.MarkHidden("stderrthreshold")
 	pflag.CommandLine.MarkHidden("vmodule")
+	pflag.CommandLine.MarkHidden("add-dir-header")
+	pflag.CommandLine.MarkHidden("log-file")
+	pflag.CommandLine.MarkHidden("log-file-max-size")
+	pflag.CommandLine.MarkHidden("skip-headers")
+	pflag.CommandLine.MarkHidden("skip-log-headers")
 
 	cmd := NewKubeiCommand(os.Stdin, os.Stdout, os.Stderr)
 
