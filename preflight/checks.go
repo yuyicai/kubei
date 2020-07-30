@@ -15,10 +15,14 @@ import (
 
 func Prepare(c *rundata.Cluster) error {
 	return c.RunOnAllNodes(func(node *rundata.Node) error {
-		if err := check(node, c.Kubei); err != nil {
-			return err
-		}
-		return send(node, c.Kubei)
+		return check(node, c.Kubei)
+	})
+}
+
+func CloseSSH(c *rundata.Cluster) error {
+	return c.RunOnAllNodes(func(node *rundata.Node) error {
+		klog.V(1).Infof("[%s][close] Close ssh connect", node.HostInfo.Host)
+		return node.SSH.Close()
 	})
 }
 

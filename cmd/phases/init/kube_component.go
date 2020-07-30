@@ -8,7 +8,6 @@ import (
 
 	"github.com/yuyicai/kubei/config/options"
 	kubephases "github.com/yuyicai/kubei/phases/kube"
-	"github.com/yuyicai/kubei/preflight"
 )
 
 // NewKubeComponentPhase creates a kubei workflow phase that implements handling of kube.
@@ -45,10 +44,6 @@ func runKubeComponent(c workflow.RunData) error {
 	}
 
 	cluster := data.Cluster()
-
-	if err := preflight.Prepare(cluster); err != nil {
-		return err
-	}
 
 	return kubephases.InstallKubeComponent(cluster)
 

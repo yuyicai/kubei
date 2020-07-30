@@ -8,7 +8,6 @@ import (
 	"github.com/yuyicai/kubei/cmd/phases"
 	"github.com/yuyicai/kubei/config/options"
 	certphases "github.com/yuyicai/kubei/phases/cert"
-	"github.com/yuyicai/kubei/preflight"
 )
 
 // NewCertPhase creates a kubei workflow phase that implements handling of cert.
@@ -45,10 +44,6 @@ func runCert(c workflow.RunData) error {
 	}
 
 	cluster := data.Cluster()
-
-	if err := preflight.Prepare(cluster); err != nil {
-		return err
-	}
 
 	if err := certphases.CreateCert(cluster); err != nil {
 		return err

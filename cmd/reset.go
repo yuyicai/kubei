@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/yuyicai/kubei/preflight"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -23,14 +24,22 @@ func NewCmdReset(out io.Writer, runOptions *runOptions) *cobra.Command {
 		Use:   "reset",
 		Short: "Run this command in order to reset nodes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := resetRunner.InitData(args)
+			c, err := resetRunner.InitData(args)
 			if err != nil {
+				return err
+			}
+
+			data := c.(*runData)
+			cluster := data.Cluster()
+			if err := preflight.Prepare(cluster); err != nil {
 				return err
 			}
 
 			if err := resetRunner.Run(args); err != nil {
 				return err
 			}
+
+			preflight.CloseSSH(cluster)
 
 			return nil
 		},

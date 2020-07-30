@@ -11,7 +11,6 @@ import (
 	"github.com/yuyicai/kubei/config/options"
 	kubeadmphases "github.com/yuyicai/kubei/phases/kubeadm"
 	networkphases "github.com/yuyicai/kubei/phases/network"
-	"github.com/yuyicai/kubei/preflight"
 )
 
 // NewKubeadmPhase creates a kubei workflow phase that implements handling of kubeadm.
@@ -51,14 +50,6 @@ func runKubeadm(c workflow.RunData) error {
 	}
 
 	cluster := data.Cluster()
-
-	//if len(kubeiCfg.ClusterNodes.GetAllMastersHost()) == 0 {
-	//	return errors.New("you host to set the master nodes by the flag --masters")
-	//}
-
-	if err := preflight.Prepare(cluster); err != nil {
-		return err
-	}
 
 	if err := kubeadmphases.LoadOfflineImages(cluster); err != nil {
 		return err

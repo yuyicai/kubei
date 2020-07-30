@@ -8,10 +8,9 @@ import (
 
 	"github.com/yuyicai/kubei/config/options"
 	containerphases "github.com/yuyicai/kubei/phases/container"
-	"github.com/yuyicai/kubei/preflight"
 )
 
-// NewContainerEnginePhase creates a kubei workflow phase that implements handling of runtime.
+// NewContainerEnginePhase creates a kubei workflow phase that implements handling of container engine.
 func NewContainerEnginePhase() workflow.Phase {
 	phase := workflow.Phase{
 		Name:         "container-engine",
@@ -45,10 +44,6 @@ func runContainerEngine(c workflow.RunData) error {
 	}
 
 	cluster := data.Cluster()
-
-	if err := preflight.Prepare(cluster); err != nil {
-		return err
-	}
 
 	return containerphases.InstallContainerEngine(cluster)
 }

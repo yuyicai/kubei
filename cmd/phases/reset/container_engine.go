@@ -2,9 +2,9 @@ package reset
 
 import (
 	"errors"
+	"github.com/yuyicai/kubei/cmd/phases"
 	"github.com/yuyicai/kubei/config/options"
 	resetphases "github.com/yuyicai/kubei/phases/reset"
-	"github.com/yuyicai/kubei/preflight"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 )
 
@@ -35,7 +35,7 @@ func getContainerEnginePhaseFlags() []string {
 }
 
 func runContainerEngine(c workflow.RunData) error {
-	data, ok := c.(ResetData)
+	data, ok := c.(phases.RunData)
 	if !ok {
 		return errors.New("reset phase invoked with an invalid rundata struct")
 	}
@@ -43,12 +43,8 @@ func runContainerEngine(c workflow.RunData) error {
 	cfg := data.KubeiCfg()
 	cluster := data.Cluster()
 
-	if err := preflight.Prepare(cluster); err != nil {
-		return err
-	}
-
 	if cfg.Reset.RemoveContainerEngine {
-		return resetphases.RemoveContainerEngine(cfg.ClusterNodes.GetAllNodes())
+		return resetphases.RemoveContainerEngine(cluster)
 	}
 
 	return nil

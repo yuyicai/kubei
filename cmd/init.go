@@ -10,6 +10,7 @@ import (
 	initphases "github.com/yuyicai/kubei/cmd/phases/init"
 	"github.com/yuyicai/kubei/config/options"
 	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/preflight"
 )
 
 // NewCmdInit returns "kubei init" command.
@@ -23,14 +24,22 @@ func NewCmdInit(out io.Writer, initOptions *runOptions) *cobra.Command {
 		Use:   "init",
 		Short: "Run this command in order to create a high availability Kubernetes cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := initRunner.InitData(args)
+			c, err := initRunner.InitData(args)
 			if err != nil {
+				return err
+			}
+
+			data := c.(*runData)
+			cluster := data.Cluster()
+			if err := preflight.Prepare(cluster); err != nil {
 				return err
 			}
 
 			if err := initRunner.Run(args); err != nil {
 				return err
 			}
+
+			preflight.CloseSSH(cluster)
 
 			return nil
 		},
@@ -43,6 +52,7 @@ func NewCmdInit(out io.Writer, initOptions *runOptions) *cobra.Command {
 	options.AddKubeadmConfigFlags(cmd.Flags(), initOptions.kubeadm)
 
 	// initialize the workflow runner with the list of phases
+	initRunner.AppendPhase(initphases.NewSendPhase())
 	initRunner.AppendPhase(initphases.NewContainerEnginePhase())
 	initRunner.AppendPhase(initphases.NewKubeComponentPhase())
 	initRunner.AppendPhase(initphases.NewCertPhase())

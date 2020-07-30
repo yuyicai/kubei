@@ -2,11 +2,10 @@ package reset
 
 import (
 	"errors"
+	"github.com/yuyicai/kubei/cmd/phases"
 	"github.com/yuyicai/kubei/config/options"
 	resetphases "github.com/yuyicai/kubei/phases/reset"
-	"github.com/yuyicai/kubei/preflight"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
-	"net"
 )
 
 // NewResetPhase creates a kubei workflow phase that implements handling of cluster.
@@ -35,20 +34,12 @@ func getKubeadmPhaseFlags() []string {
 }
 
 func runKubeadm(c workflow.RunData) error {
-	data, ok := c.(ResetData)
+	data, ok := c.(phases.RunData)
 	if !ok {
 		return errors.New("reset phase invoked with an invalid rundata struct")
 	}
 
-	cfg := data.KubeiCfg()
-	kubeadmCfg := data.KubeadmCfg()
-
 	cluster := data.Cluster()
 
-	if err := preflight.Prepare(cluster); err != nil {
-		return err
-	}
-
-	apiDomainName, _, _ := net.SplitHostPort(kubeadmCfg.ControlPlaneEndpoint)
-	return resetphases.ResetKubeadm(cfg.ClusterNodes.GetAllNodes(), apiDomainName)
+	return resetphases.ResetKubeadm(cluster)
 }
