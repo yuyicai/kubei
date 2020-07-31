@@ -13,9 +13,9 @@ import (
 // NewSendPhase creates a kubei workflow phase that implements handling of send.
 func NewSendPhase() workflow.Phase {
 	phase := workflow.Phase{
-		Name:         "container-engine",
-		Short:        "install container engine",
-		Long:         "install container engine",
+		Name:         "send",
+		Short:        "send kubernetes offline pkg to nodes",
+		Long:         "send kubernetes offline pkg to nodes",
 		InheritFlags: getSendPhaseFlags(),
 		Run:          runSend,
 	}
