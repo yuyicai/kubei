@@ -19,28 +19,26 @@ func NewCmdInit(out io.Writer, initOptions *runOptions) *cobra.Command {
 		initOptions = newInitOptions()
 	}
 	initRunner := workflow.NewRunner()
+	cluster := &rundata.Cluster{}
 
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Run this command in order to create a high availability Kubernetes cluster",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			c, err := initRunner.InitData(args)
 			if err != nil {
 				return err
 			}
 
 			data := c.(*runData)
-			cluster := data.Cluster()
-			if err := preflight.Prepare(cluster); err != nil {
-				return err
-			}
-
-			if err := initRunner.Run(args); err != nil {
-				return err
-			}
-
+			cluster = data.Cluster()
+			return preflight.Prepare(cluster)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return initRunner.Run(args)
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			preflight.CloseSSH(cluster)
-
 			return nil
 		},
 		Args: cobra.NoArgs,
