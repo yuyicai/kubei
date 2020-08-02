@@ -87,16 +87,17 @@ func runOne(node *Node, f func(*Node) error) error {
 }
 
 type Kubei struct {
-	ContainerEngine ContainerEngine
-	Kubernetes      Kubernetes
-	ClusterNodes    ClusterNodes
-	NetworkPlugins  NetworkPlugins
-	HA              HA
-	JumpServer      JumpServer
-	Install         Install
-	Reset           Reset
-	Addons          Addons
-	OfflineFile     string
+	ContainerEngine  ContainerEngine
+	Kubernetes       Kubernetes
+	ClusterNodes     ClusterNodes
+	NetworkPlugins   NetworkPlugins
+	HA               HA
+	JumpServer       JumpServer
+	Install          Install
+	Reset            Reset
+	Addons           Addons
+	OfflineFile      string
+	CertNotAfterTime int
 }
 
 type JumpServer struct {

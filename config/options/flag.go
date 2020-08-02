@@ -27,6 +27,7 @@ const (
 	RemoveKubernetesComponent = "remove-kubernetes-component"
 	OfflineFile               = "offline-file"
 	ShortOfflineFile          = "f"
+	CertNotAfterTime          = "cert-time"
 )
 
 func AddResetFlags(flagSet *flag.FlagSet, options *Reset) {
@@ -123,5 +124,11 @@ func AddJumpServerFlags(flagSet *flag.FlagSet, userInfo *map[string]string) {
 func AddOfflinePackageFlags(flagSet *flag.FlagSet, pkg *string) {
 	flagSet.StringVarP(pkg, OfflineFile, ShortOfflineFile, *pkg,
 		"Path to offline file path",
+	)
+}
+
+func AddCertNotAfterTimeFlags(flagSet *flag.FlagSet, year *int) {
+	flagSet.IntVar(year, CertNotAfterTime, constants.DefaultCertNotAfterYear,
+		"cert not after time, time units is year",
 	)
 }

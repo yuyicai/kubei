@@ -33,6 +33,7 @@ func getCertPhaseFlags() []string {
 		options.Port,
 		options.User,
 		options.Key,
+		options.CertNotAfterTime,
 	}
 	return flags
 }

@@ -19,10 +19,13 @@ func CreateCert(c *rundata.Cluster) error {
 
 	certTree := rundata.CertificateTree{}
 
+	certNotAfterTime := constants.Year * time.Duration(c.CertNotAfterTime)
+
 	if err := c.RunOnFirstMaster(func(node *rundata.Node) error {
 		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
+		klog.V(2).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host, certNotAfterTime)
 		c.Kubeadm.NodeRegistration.Name = node.Name
-		if err := CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, constants.DefaultCertNotAfterTime, certTree); err != nil {
+		if err := CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, certNotAfterTime, certTree); err != nil {
 			return err
 		}
 		certTree = node.CertificateTree
@@ -35,11 +38,11 @@ func CreateCert(c *rundata.Cluster) error {
 
 	if err := c.RunOnOtherMasters(func(node *rundata.Node) error {
 		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
-
+		klog.V(2).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host)
 		//c.Mutex.Lock()
 		//c.Kubeadm.NodeRegistration.Name = node.Name
 
-		if err := CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, constants.DefaultCertNotAfterTime, certTree); err != nil {
+		if err := CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, certNotAfterTime, certTree); err != nil {
 			return err
 		}
 		//c.Mutex.Unlock()
@@ -75,7 +78,7 @@ func CreatePKIAssets(node *rundata.Node, cfg *kubeadmapi.InitConfiguration, notA
 		return err
 	}
 
-	if err := node.CertificateTree.CreateTree(node, cfg, notAfterTime); err != nil {
+	if err := node.CertificateTree.Create(node, cfg, notAfterTime); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error creating PKI assets on %s", node.HostInfo.Host))
 	}
 

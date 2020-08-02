@@ -22,6 +22,7 @@ func DefaultKubeiCfg(k *Kubei) {
 	networkPluginsCfg(&k.NetworkPlugins)
 	haCfg(&k.HA)
 	clusterNodesCfg(&k.ClusterNodes)
+	certCfg(&k.CertNotAfterTime)
 }
 
 func addonsCfg(a *Addons) {
@@ -122,6 +123,12 @@ func dockerCfg(d *Docker) {
 
 	if d.StorageDriver == "" {
 		d.StorageDriver = constants.DockerDefaultStorageDriver
+	}
+}
+
+func certCfg(t *int) {
+	if *t == 0 {
+		*t = constants.DefaultCertNotAfterYear
 	}
 }
 

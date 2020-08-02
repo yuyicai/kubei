@@ -33,7 +33,8 @@ const (
 	DefaultClusterName          = "kubernetes"
 	DefaultWaitNodeInterval     = 2 * time.Second
 	DefaultWaitNodeTimeout      = 6 * time.Minute
-	DefaultCertNotAfterTime     = 24 * time.Hour * 365 * 10
+	DefaultCertNotAfterYear     = 10
+	DefaultCertNotAfterTime     = Year * DefaultCertNotAfterYear
 
 	// networking plugin
 	DefaulNetworkPlugin           = "flannel"
@@ -56,4 +57,7 @@ const (
 	LoopbackAddress = "127.0.0.1"
 
 	DefaultGOMAXPROCS = 20
+
+	Day  = 24 * time.Hour
+	Year = 365 * Day
 )

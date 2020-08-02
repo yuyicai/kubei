@@ -75,6 +75,7 @@ func addInitConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
 	options.AddKubeClusterNodesConfigFlags(flagSet, &k.ClusterNodes)
 	options.AddJumpServerFlags(flagSet, &k.JumpServer)
 	options.AddOfflinePackageFlags(flagSet, &k.OfflineFile)
+	options.AddCertNotAfterTimeFlags(flagSet, &k.CertNotAfterTime)
 }
 
 func newInitOptions() *runOptions {

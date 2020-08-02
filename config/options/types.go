@@ -8,12 +8,13 @@ type Kubeadm struct {
 }
 
 type Kubei struct {
-	Reset           Reset
-	ClusterNodes    ClusterNodes
-	ContainerEngine ContainerEngine
-	Kubernetes      Kubernetes
-	JumpServer      map[string]string
-	OfflineFile     string
+	Reset            Reset
+	ClusterNodes     ClusterNodes
+	ContainerEngine  ContainerEngine
+	Kubernetes       Kubernetes
+	JumpServer       map[string]string
+	OfflineFile      string
+	CertNotAfterTime int
 }
 
 type Kubernetes struct {

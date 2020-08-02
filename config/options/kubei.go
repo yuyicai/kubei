@@ -72,6 +72,8 @@ func (k *Kubei) ApplyTo(data *rundata.Kubei) {
 		data.OfflineFile = k.OfflineFile
 		setNodesInstallType(data.ClusterNodes.GetAllNodes())
 	}
+
+	data.CertNotAfterTime = k.CertNotAfterTime
 }
 
 func setNodesHost(nodes *[]*rundata.Node, optionsNodes []string) {

@@ -108,8 +108,8 @@ func (c *Cert) CreateKubeConfig(ic *kubeadmapi.InitConfiguration, caCert *x509.C
 // CertificateTree is represents a one-level-deep tree, mapping a CA to the certs that depend on it.
 type CertificateTree map[*Cert]Certificates
 
-// CreateTree creates the CAs, certs signed by the CAs.
-func (t CertificateTree) CreateTree(node *Node, ic *kubeadmapi.InitConfiguration, notAfterTime time.Duration) error {
+// Create creates the CAs, certs signed by the CAs.
+func (t CertificateTree) Create(node *Node, ic *kubeadmapi.InitConfiguration, notAfterTime time.Duration) error {
 	for ca, leaves := range t {
 		if ca.Cert == nil {
 
