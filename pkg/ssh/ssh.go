@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
@@ -116,16 +117,16 @@ func (c *Client) Run(cmd string) error {
 		return err
 	}
 
+	var buferr bytes.Buffer
+	teeStderr := io.TeeReader(stderr, &buferr)
+
 	if err := session.Start(cmd); err != nil {
-		return err
+		return errors.Wrap(err, buferr.String())
 	}
 
 	g := errgroup.Group{}
 	g.Go(func() error {
-		if err := sendSudoPassword(c.password, c.host, in, stderr); err != nil {
-			return err
-		}
-		return nil
+		return sendSudoPassword(c.password, c.host, in, teeStderr)
 	})
 
 	scanner := bufio.NewScanner(stdout)
@@ -137,10 +138,14 @@ func (c *Client) Run(cmd string) error {
 	}
 
 	if err := g.Wait(); err != nil {
-		return err
+		return errors.Wrap(err, buferr.String())
 	}
 
-	return session.Wait()
+	if err := session.Wait(); err != nil {
+		return errors.Wrap(err, buferr.String())
+	}
+
+	return nil
 }
 
 func (c *Client) RunOut(cmd string) ([]byte, error) {
@@ -155,8 +160,6 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 	}
 	defer session.Close()
 
-	var buf bytes.Buffer
-
 	stdout, err := session.StdoutPipe()
 	if err != nil {
 		return []byte{}, err
@@ -170,20 +173,21 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 		return []byte{}, err
 	}
 
+	var buf bytes.Buffer
+	var buferr bytes.Buffer
+	teeStderr := io.TeeReader(stderr, &buferr)
+
 	if err := session.Start(cmd); err != nil {
-		return []byte{}, err
+		return []byte{}, errors.Wrap(err, buferr.String())
 	}
 
 	g := errgroup.Group{}
 	g.Go(func() error {
-		if err := sendSudoPassword(c.password, c.host, in, stderr); err != nil {
-			return err
-		}
-		return nil
+		return sendSudoPassword(c.password, c.host, in, teeStderr)
 	})
 
-	tee := io.TeeReader(stdout, &buf)
-	scanner := bufio.NewScanner(tee)
+	teeStdout := io.TeeReader(stdout, &buf)
+	scanner := bufio.NewScanner(teeStdout)
 
 	for scanner.Scan() {
 		str := scanner.Text()
@@ -193,10 +197,14 @@ func (c *Client) RunOut(cmd string) ([]byte, error) {
 	}
 
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return []byte{}, errors.Wrap(err, buferr.String())
 	}
 
-	return buf.Bytes(), session.Wait()
+	if err := session.Wait(); err != nil {
+		return []byte{}, errors.Wrap(err, buferr.String())
+	}
+
+	return buf.Bytes(), nil
 }
 
 func (c *Client) SendFile(dstFile, srcFile string) error {
@@ -265,9 +273,9 @@ func (c *Client) cmdPrefix(cmd string) string {
 	cmd = r.Replace(cmd)
 
 	if c.user == "root" {
-		cmd = fmt.Sprintf("bash -c \"\nset -e\n%s\"", cmd)
+		cmd = fmt.Sprintf("bash -c \"set -e\n%s\"", cmd)
 	} else {
-		cmd = fmt.Sprintf("sudo -S bash -c \"\nset -e\n%s\"", cmd)
+		cmd = fmt.Sprintf("sudo -S bash -c \"set -e\n%s\"", cmd)
 	}
 
 	return cmd

@@ -36,7 +36,7 @@ func CreateCert(c *rundata.Cluster) error {
 		return err
 	}
 
-	if err := c.RunOnOtherMasters(func(node *rundata.Node) error {
+	return c.RunOnOtherMasters(func(node *rundata.Node) error {
 		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
 		klog.V(2).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host)
 		//c.Mutex.Lock()
@@ -49,11 +49,7 @@ func CreateCert(c *rundata.Cluster) error {
 
 		return node.CertificateTree.CreateKubeConfig(&c.Kubeadm.InitConfiguration)
 
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	})
 }
 
 // CreatePKIAssets will create all PKI assets necessary.
