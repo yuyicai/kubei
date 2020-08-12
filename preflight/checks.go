@@ -13,6 +13,7 @@ import (
 )
 
 func Prepare(c *rundata.Cluster) error {
+	color.HiBlue("Checking SSH connect 🌐")
 	return c.RunOnAllNodes(func(node *rundata.Node) error {
 		return check(node, c.Kubei)
 	})
@@ -26,11 +27,9 @@ func CloseSSH(c *rundata.Cluster) error {
 }
 
 func check(node *rundata.Node, cfg *rundata.Kubei) error {
-	color.HiBlue("Checking SSH connection 🌐")
 	if err := jumpServerCheck(&cfg.JumpServer); err != nil {
 		return fmt.Errorf("[preflight] Failed to set jump server: %v", err)
 	}
-
 	return nodesCheck(node, cfg)
 }
 
@@ -43,7 +42,7 @@ func jumpServerCheck(jumpServer *rundata.JumpServer) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("[%s] [preflight] jump server SSH connection: %s\n", hostInfo.Host, color.HiGreenString("done✅️"))
+		fmt.Printf("[%s] [preflight] jump server SSH connect: %s\n", hostInfo.Host, color.HiGreenString("done✅️"))
 		return nil
 	}
 
@@ -71,12 +70,12 @@ func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	userInfo := node.HostInfo
 	//Set up ssh connection through jump server
 	if jumpServer.HostInfo.Host != "" {
-		fmt.Printf("[%s] [preflight] SSH connection (through jump server %s\n): %s", userInfo.Host, jumpServer.HostInfo.Host, color.HiGreenString("done✅️"))
+		fmt.Printf("[%s] [preflight] SSH connect (through jump server %s\n): %s", userInfo.Host, jumpServer.HostInfo.Host, color.HiGreenString("done✅️"))
 		node.SSH, err = ssh.ConnectByJumpServer(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key, jumpServer.Client)
 		return err
 	} else {
 		//Set up ssh connection direct
-		fmt.Printf("[%s] [preflight] SSH connection: %s\n", userInfo.Host, color.HiGreenString("done✅️"))
+		fmt.Printf("[%s] [preflight] SSH connect: %s\n", userInfo.Host, color.HiGreenString("done✅️"))
 		node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key)
 		return err
 	}

@@ -56,7 +56,7 @@ func runKubeadm(c workflow.RunData) error {
 		return err
 	}
 
-	color.HiBlue("Creating Kubernetes cluster ☸️")
+	color.HiBlue("Initializing master0 ☸️")
 	// init master0
 	if err := kubeadmphases.InitMaster(cluster); err != nil {
 		return err
