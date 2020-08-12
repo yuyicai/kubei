@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
@@ -20,7 +21,7 @@ import (
 
 //JoinNode join nodes
 func JoinNode(c *rundata.Cluster) error {
-	return c.RunOnWorkers(func(node *rundata.Node) error {
+	return c.RunOnWorkersAndPrintLog(func(node *rundata.Node) error {
 		if err := system.SwapOff(node); err != nil {
 			return err
 		}
@@ -34,14 +35,14 @@ func JoinNode(c *rundata.Cluster) error {
 		}
 
 		// join worker node
-		klog.Infof("[%s] [kubeadm-join] Joining worker nodes", node.HostInfo.Host)
+		klog.V(2).Infof("[%s] [kubeadm-join] Joining worker nodes", node.HostInfo.Host)
 		if err := joinNode(node, *c.Kubei, *c.Kubeadm); err != nil {
 			return fmt.Errorf("[%s] Failed to join master worker : %v", node.HostInfo.Host, err)
 		}
-		klog.Infof("[%s] [kubeadm-join] Successfully joined worker nodes", node.HostInfo.Host)
+		fmt.Printf("[%s] [kubeadm-join] join to nodes: %s\n", node.HostInfo.Host, color.HiGreenString("done✅️"))
 
 		return nil
-	})
+	}, color.HiBlueString("Joining to nodes ☸️"))
 }
 
 func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubeadm) error {
@@ -55,11 +56,11 @@ func ha(node *rundata.Node, masters []string, h *rundata.HA, kcfg *rundata.Kubea
 			return err
 		}
 
-		klog.Infof("[%s] [slb] Setting up the local SLB", node.HostInfo.Host)
+		klog.V(2).Infof("[%s] [slb] Setting up the local SLB", node.HostInfo.Host)
 		if err := localSLB(masters, node, &h.LocalSLB, kcfg); err != nil {
 			return fmt.Errorf("[%s] Failed to set up the local SLB: %v", node.HostInfo.Host, err)
 		}
-		klog.Infof("[%s] [slb] Successfully set up the local SLB", node.HostInfo.Host)
+		klog.V(1).Infof("[%s] [slb] Successfully set up the local SLB", node.HostInfo.Host)
 	case constants.HATypeExternalSLB:
 		//TODO
 
@@ -147,14 +148,14 @@ func CheckNodesReady(c *rundata.Cluster) error {
 		if err != nil {
 			return err
 		}
-		klog.Info(output, "\nKubernetes High-Availability cluster deployment completed")
+		fmt.Println(output, "\nKubernetes High-Availability cluster deployment completed")
 		return nil
 	})
 }
 
 func checkNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, error) {
 	var str string
-	klog.Infof("[%s] [check] Waiting for all nodes to become ready. This can take up to %v", node.HostInfo.Host, timeout)
+	color.HiBlue("Waiting for all nodes to become ready. This can take up to %v⏳\n", timeout)
 	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		var output []byte
 		output, _ = node.RunOut("kubectl get nodes -owide")

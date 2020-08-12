@@ -3,6 +3,7 @@ package init
 import (
 	"errors"
 
+	"github.com/fatih/color"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
 	"github.com/yuyicai/kubei/cmd/phases"
@@ -44,5 +45,6 @@ func runSend(c workflow.RunData) error {
 
 	cluster := data.Cluster()
 
+	color.HiBlue("Sending Kubernetes offline pkg to nodes ✉️")
 	return sendphases.Send(cluster)
 }

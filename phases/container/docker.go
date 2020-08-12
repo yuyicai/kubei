@@ -3,6 +3,7 @@ package container
 import (
 	"fmt"
 
+	"github.com/fatih/color"
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/config/rundata"
@@ -12,8 +13,9 @@ import (
 
 func InstallDocker(c *rundata.Cluster) error {
 
+	color.HiBlue("Installing Docker on all nodes 🐳")
 	return c.RunOnAllNodes(func(node *rundata.Node) error {
-		klog.Infof("[%s] [container-engine] Installing Docker", node.HostInfo.Host)
+		klog.V(2).Infof("[%s] [container-engine] Installing Docker", node.HostInfo.Host)
 		if err := installDocker(node, c.ContainerEngine.Docker); err != nil {
 			return fmt.Errorf("[%s] [container-engine] Failed to install Docker: %v", node.HostInfo.Host, err)
 		}
@@ -21,8 +23,7 @@ func InstallDocker(c *rundata.Cluster) error {
 		if err := system.Restart("docker", node); err != nil {
 			return err
 		}
-
-		klog.Infof("[%s] [container-engine] Successfully installed Docker", node.HostInfo.Host)
+		fmt.Printf("[%s] [container-engine] install Docker: %s\n", node.HostInfo.Host, color.HiGreenString("done✅️"))
 		return nil
 	})
 }

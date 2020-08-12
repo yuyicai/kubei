@@ -2,6 +2,7 @@ package send
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"path"
 	"path/filepath"
 
@@ -13,7 +14,12 @@ import (
 
 func Send(c *rundata.Cluster) error {
 	return c.RunOnAllNodes(func(node *rundata.Node) error {
-		return send(node, c.Kubei)
+		if err := send(node, c.Kubei); err != nil {
+			return err
+		}
+
+		fmt.Printf("[%s] [send] send kubernetes offline pkg: %s\n", node.HostInfo.Host, color.HiGreenString("done✅️"))
+		return nil
 	})
 }
 
@@ -26,7 +32,7 @@ func sendAndtar(dstFile, srcFile string, node *rundata.Node) error {
 		if err := sendFile(dstFile, srcFile, node); err != nil {
 			return err
 		}
-		klog.Infof("[%s] [send] send pkg to %s, ", node.HostInfo.Host, dstFile)
+		klog.V(3).Infof("[%s] [send] send pkg to %s, ", node.HostInfo.Host, dstFile)
 		if err := tar(dstFile, node); err != nil {
 			return fmt.Errorf("[%s] [tar] failed to Decompress the file %s: %v", node.HostInfo.Host, dstFile, err)
 		}

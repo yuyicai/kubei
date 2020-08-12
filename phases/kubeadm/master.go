@@ -5,6 +5,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/fatih/color"
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/config/constants"
@@ -29,7 +30,7 @@ func InitMaster(c *rundata.Cluster) error {
 			return err
 		}
 
-		klog.Infof("[%s] [kubeadm-init] Initializing master0", node.HostInfo.Host)
+		klog.V(3).Infof("[%s] [kubeadm-init] Initializing master0", node.HostInfo.Host)
 
 		output, err := initMaster(node, *c.Kubei, *c.Kubeadm)
 		if err != nil {
@@ -40,7 +41,7 @@ func InitMaster(c *rundata.Cluster) error {
 			return err
 		}
 
-		klog.Infof("[%s] [kubeadm-init] Successfully initialized master0", node.HostInfo.Host)
+		fmt.Printf("[%s] [kubeadm-init] init master0: %s\n", node.HostInfo.Host, color.HiGreenString("done✅️"))
 
 		klog.V(2).Infof("[%s] [token] Getting token from master init output", node.HostInfo.Host)
 		getToken(string(output), &c.Kubernetes.Token)
@@ -64,7 +65,7 @@ func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.K
 
 // JoinControlPlane join masters to ControlPlane
 func JoinControlPlane(c *rundata.Cluster) error {
-	return c.RunOnOtherMasters(func(node *rundata.Node) error {
+	return c.RunOnOtherMastersAndPrintLog(func(node *rundata.Node) error {
 		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
 		if err := system.SetHost(node, c.ClusterNodes.Masters[0].HostInfo.Host, apiDomainName); err != nil {
 			return err
@@ -78,18 +79,19 @@ func JoinControlPlane(c *rundata.Cluster) error {
 			return err
 		}
 
-		klog.Infof("[%s] [kubeadm-join] Joining master nodes", node.HostInfo.Host)
+		klog.V(3).Infof("[%s] [kubeadm-join] Joining to masters", node.HostInfo.Host)
 		if err := joinControlPlane(node, *c.Kubei, *c.Kubeadm); err != nil {
 			return err
 		}
-		klog.Infof("[%s] [kubeadm-join] Successfully joined master nodes", node.HostInfo.Host)
+
+		fmt.Printf("[%s] [kubeadm-join] join to masters: %s\n", node.HostInfo.Host, color.HiGreenString("done✅️"))
 
 		if err := copyAdminConfig(node); err != nil {
 			return err
 		}
 
 		return system.SetHost(node, constants.LoopbackAddress, apiDomainName)
-	})
+	}, color.HiBlueString("Joining to masters ☸️"))
 }
 
 func joinControlPlane(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kubeadm) error {

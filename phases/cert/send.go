@@ -4,11 +4,14 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	"github.com/yuyicai/kubei/config/rundata"
-	"github.com/yuyicai/kubei/pkg/pki"
+
+	"github.com/fatih/color"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
+
+	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/pkg/pki"
 )
 
 func SendCert(c *rundata.Cluster) error {
@@ -25,7 +28,12 @@ func SendCert(c *rundata.Cluster) error {
 			return err
 		}
 
-		return sendCertAndKubeConfig(node)
+		if err := sendCertAndKubeConfig(node); err != nil {
+			return err
+		}
+
+		fmt.Printf("[%s] [cert] create certificates: %s\n", node.HostInfo.Host, color.HiGreenString("done✅️"))
+		return nil
 	})
 
 }

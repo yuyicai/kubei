@@ -3,6 +3,7 @@ module github.com/yuyicai/kubei
 go 1.13
 
 require (
+	github.com/fatih/color v1.7.0
 	github.com/go-kratos/kratos v0.5.0
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2

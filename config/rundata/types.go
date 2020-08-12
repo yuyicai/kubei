@@ -3,6 +3,7 @@ package rundata
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/go-kratos/kratos/pkg/sync/errgroup"
@@ -38,6 +39,22 @@ func (c *Cluster) RunOnMasters(f func(*Node) error) error {
 
 func (c *Cluster) RunOnWorkers(f func(*Node) error) error {
 	return run(c.ClusterNodes.Workers, f)
+}
+
+func (c *Cluster) RunOnWorkersAndPrintLog(f func(*Node) error, s string) error {
+	if len(c.ClusterNodes.Workers) == 0 {
+		return nil
+	}
+	fmt.Println(s)
+	return run(c.ClusterNodes.Workers, f)
+}
+
+func (c *Cluster) RunOnOtherMastersAndPrintLog(f func(*Node) error, s string) error {
+	if len(c.ClusterNodes.Masters) <= 1 {
+		return nil
+	}
+	fmt.Println(s)
+	return run(c.ClusterNodes.Masters[1:], f)
 }
 
 func (c *Cluster) RunOnOtherMasters(f func(*Node) error) error {

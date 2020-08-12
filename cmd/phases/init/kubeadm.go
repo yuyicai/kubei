@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/fatih/color"
 	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
@@ -55,12 +56,14 @@ func runKubeadm(c workflow.RunData) error {
 		return err
 	}
 
+	color.HiBlue("Creating Kubernetes cluster ☸️")
 	// init master0
 	if err := kubeadmphases.InitMaster(cluster); err != nil {
 		return err
 	}
 
 	// add network plugin
+	color.HiBlue("Installing Network plugin 🌐")
 	if err := networkphases.Network(cluster); err != nil {
 		return err
 	}

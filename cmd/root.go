@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	cliflag "k8s.io/component-base/cli/flag"
@@ -15,9 +16,11 @@ import (
 func NewKubeiCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 
 	cmds := &cobra.Command{
-		Use:   "kubei",
-		Short: "kubei: easily deploy a high availability Kubernetes cluster",
-		Long:  "easily deploy a high availability Kubernetes cluster",
+		Use:           "kubei",
+		Short:         "kubei: easily deploy a high availability Kubernetes cluster",
+		Long:          "easily deploy a high availability Kubernetes cluster",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 
 	cmds.AddCommand(NewCmdInit(out, nil))
@@ -54,7 +57,7 @@ func Execute() {
 	cmd := NewKubeiCommand(os.Stdin, os.Stdout, os.Stderr)
 
 	if err := cmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Printf("%s: %v\n", color.RedString("Error"), err)
 		os.Exit(1)
 	}
 }

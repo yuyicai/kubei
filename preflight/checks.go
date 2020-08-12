@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/fatih/color"
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/config/constants"
@@ -25,6 +26,7 @@ func CloseSSH(c *rundata.Cluster) error {
 }
 
 func check(node *rundata.Node, cfg *rundata.Kubei) error {
+	color.HiBlue("Checking SSH connection 🌐")
 	if err := jumpServerCheck(&cfg.JumpServer); err != nil {
 		return fmt.Errorf("[preflight] Failed to set jump server: %v", err)
 	}
@@ -35,10 +37,14 @@ func check(node *rundata.Node, cfg *rundata.Kubei) error {
 func jumpServerCheck(jumpServer *rundata.JumpServer) error {
 	if jumpServer.HostInfo.Host != "" && jumpServer.Client == nil {
 		hostInfo := jumpServer.HostInfo
-		klog.Infof("[preflight] Checking jump server %s", hostInfo.Host)
+		klog.V(5).Infof("[preflight] Checking jump server %s", hostInfo.Host)
 		var err error
 		jumpServer.Client, err = ssh.Connect(hostInfo.Host, hostInfo.Port, hostInfo.User, hostInfo.Password, hostInfo.Key)
-		return err
+		if err != nil {
+			return err
+		}
+		fmt.Printf("[%s] [preflight] jump server SSH connection: %s\n", hostInfo.Host, color.HiGreenString("done✅️"))
+		return nil
 	}
 
 	return nil
@@ -65,12 +71,12 @@ func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	userInfo := node.HostInfo
 	//Set up ssh connection through jump server
 	if jumpServer.HostInfo.Host != "" {
-		klog.Infof("[%s] [preflight] Checking SSH connection (through jump server %s)", userInfo.Host, jumpServer.HostInfo.Host)
+		fmt.Printf("[%s] [preflight] SSH connection (through jump server %s\n): %s", userInfo.Host, jumpServer.HostInfo.Host, color.HiGreenString("done✅️"))
 		node.SSH, err = ssh.ConnectByJumpServer(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key, jumpServer.Client)
 		return err
 	} else {
 		//Set up ssh connection direct
-		klog.Infof("[%s] [preflight] Checking SSH connection", userInfo.Host)
+		fmt.Printf("[%s] [preflight] SSH connection: %s\n", userInfo.Host, color.HiGreenString("done✅️"))
 		node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key)
 		return err
 	}

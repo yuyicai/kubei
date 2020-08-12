@@ -4,26 +4,31 @@ import (
 	"crypto"
 	"crypto/x509"
 	"fmt"
+	"time"
+
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
-	"github.com/yuyicai/kubei/config/constants"
-	"github.com/yuyicai/kubei/config/rundata"
-	"github.com/yuyicai/kubei/pkg/pki"
 	"k8s.io/klog"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	kubeadmpkiutil "k8s.io/kubernetes/cmd/kubeadm/app/util/pkiutil"
-	"time"
+
+	"github.com/yuyicai/kubei/config/constants"
+	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/pkg/pki"
 )
 
 func CreateCert(c *rundata.Cluster) error {
+
+	color.HiBlue("Creating certificates for kubernetes and etcd 📘")
 
 	certTree := rundata.CertificateTree{}
 
 	certNotAfterTime := constants.Year * time.Duration(c.CertNotAfterTime)
 
 	if err := c.RunOnFirstMaster(func(node *rundata.Node) error {
-		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
-		klog.V(2).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host, certNotAfterTime)
+		klog.V(2).Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
+		klog.V(3).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host, certNotAfterTime)
 		c.Kubeadm.NodeRegistration.Name = node.Name
 		if err := CreatePKIAssets(node, &c.Kubeadm.InitConfiguration, certNotAfterTime, certTree); err != nil {
 			return err
@@ -37,8 +42,8 @@ func CreateCert(c *rundata.Cluster) error {
 	}
 
 	return c.RunOnOtherMasters(func(node *rundata.Node) error {
-		klog.Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
-		klog.V(2).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host)
+		klog.V(2).Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
+		klog.V(3).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host)
 		//c.Mutex.Lock()
 		//c.Kubeadm.NodeRegistration.Name = node.Name
 
@@ -54,7 +59,7 @@ func CreateCert(c *rundata.Cluster) error {
 
 // CreatePKIAssets will create all PKI assets necessary.
 func CreatePKIAssets(node *rundata.Node, cfg *kubeadmapi.InitConfiguration, notAfterTime time.Duration, certTree rundata.CertificateTree) error {
-	klog.V(1).Infoln("creating PKI assets")
+	klog.V(3).Infoln("creating PKI assets")
 
 	var certList rundata.Certificates
 	var err error
@@ -83,14 +88,14 @@ func CreatePKIAssets(node *rundata.Node, cfg *kubeadmapi.InitConfiguration, notA
 
 // CreateServiceAccountKeyAndPublicKey creates new public/private key files for signing service account users.
 func CreateServiceAccountKeyAndPublicKey(keyType x509.PublicKeyAlgorithm) (crypto.Signer, crypto.PublicKey, error) {
-	klog.V(1).Infoln("creating new public/private key files for signing service account users")
+	klog.V(3).Infoln("creating new public/private key files for signing service account users")
 
 	key, err := kubeadmpkiutil.NewPrivateKey(keyType)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	fmt.Printf("[certs] Generating %q key and public key\n", kubeadmconstants.ServiceAccountKeyBaseName)
+	klog.V(3).Infoln("[certs] Generating %q key and public key", kubeadmconstants.ServiceAccountKeyBaseName)
 
 	return key, key.Public(), nil
 }
