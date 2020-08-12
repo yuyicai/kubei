@@ -70,66 +70,59 @@ https://github.com/yuyicai/kubei/releases
 
 ```
 ./kubei init --key=$HOME/.ssh/k8s.key \
- --masters 10.3.0.10,10.3.0.11,10.3.0.12 \
- --workers 10.3.0.20,10.3.0.21 \
- --offline-file ./kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz \
- --skip-headers
+ -m 10.3.0.10,10.3.0.11,10.3.0.12 \
+ -n 10.3.0.20,10.3.0.21 \
+ -f ./kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz
 ```
 
 部署过程及结果：
 
 ```
-[10.3.0.21] [preflight] Checking SSH connection
-[10.3.0.11] [preflight] Checking SSH connection
-[10.3.0.10] [preflight] Checking SSH connection
-[10.3.0.12] [preflight] Checking SSH connection
-[10.3.0.20] [preflight] Checking SSH connection
-[10.3.0.10] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
-[10.3.0.21] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
-[10.3.0.11] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
-[10.3.0.20] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
-[10.3.0.12] [send] send pkg to /tmp/.kubei/kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz,
-[10.3.0.10] [container-engine] Installing Docker
-[10.3.0.20] [container-engine] Installing Docker
-[10.3.0.21] [container-engine] Installing Docker
-[10.3.0.11] [container-engine] Installing Docker
-[10.3.0.12] [container-engine] Installing Docker
-[10.3.0.10] [container-engine] Successfully installed Docker
-[10.3.0.21] [container-engine] Successfully installed Docker
-[10.3.0.11] [container-engine] Successfully installed Docker
-[10.3.0.12] [container-engine] Successfully installed Docker
-[10.3.0.20] [container-engine] Successfully installed Docker
-[10.3.0.10] [kube] Installing Kubernetes component
-[10.3.0.11] [kube] Installing Kubernetes component
-[10.3.0.20] [kube] Installing Kubernetes component
-[10.3.0.12] [kube] Installing Kubernetes component
-[10.3.0.21] [kube] Installing Kubernetes component
-[10.3.0.10] [kube] Successfully installed Kubernetes component
-[10.3.0.21] [kube] Successfully installed Kubernetes component
-[10.3.0.20] [kube] Successfully installed Kubernetes component
-[10.3.0.12] [kube] Successfully installed Kubernetes component
-[10.3.0.11] [kube] Successfully installed Kubernetes component
-[10.3.0.10] [cert] Creating certificate
-[10.3.0.12] [cert] Creating certificate
-[10.3.0.11] [cert] Creating certificate
-[10.3.0.10] [kubeadm-init] Initializing master0
-[10.3.0.10] [kubeadm-init] Successfully initialized master0
-[10.3.0.10] [network] Add the flannel network plugin
-[10.3.0.12] [kubeadm-join] Joining master nodes
-[10.3.0.21] [kubeadm-join] Joining worker nodes
-[10.3.0.20] [kubeadm-join] Joining worker nodes
-[10.3.0.11] [kubeadm-join] Joining master nodes
-[10.3.0.12] [kubeadm-join] Successfully joined master nodes
-[10.3.0.21] [kubeadm-join] Successfully joined worker nodes
-[10.3.0.20] [kubeadm-join] Successfully joined worker nodes
-[10.3.0.11] [kubeadm-join] Successfully joined master nodes
-[10.3.0.10] [check] Waiting for all nodes to become ready. This can take up to 6m0s
+Checking SSH connect 🌐
+[10.3.0.10] [preflight] SSH connect: done✅️
+[10.3.0.11] [preflight] SSH connect: done✅️
+[10.3.0.12] [preflight] SSH connect: done✅️
+[10.3.0.20] [preflight] SSH connect: done✅️
+[10.3.0.21] [preflight] SSH connect: done✅️
+Sending Kubernetes offline pkg to nodes ✉️
+[10.3.0.10] [send] send kubernetes offline pkg: done✅️
+[10.3.0.21] [send] send kubernetes offline pkg: done✅️
+[10.3.0.12] [send] send kubernetes offline pkg: done✅️
+[10.3.0.20] [send] send kubernetes offline pkg: done✅️
+[10.3.0.11] [send] send kubernetes offline pkg: done✅️
+Installing Docker on all nodes 🐳
+[10.3.0.10] [container-engine] install Docker: done✅️
+[10.3.0.21] [container-engine] install Docker: done✅️
+[10.3.0.20] [container-engine] install Docker: done✅️
+[10.3.0.12] [container-engine] install Docker: done✅️
+[10.3.0.11] [container-engine] install Docker: done✅️
+Installing Kubernetes component ☸️
+[10.3.0.12] [kube] install Kubernetes component: done✅️
+[10.3.0.11] [kube] install Kubernetes component: done✅️
+[10.3.0.20] [kube] install Kubernetes component: done✅️
+[10.3.0.10] [kube] install Kubernetes component: done✅️
+[10.3.0.21] [kube] install Kubernetes component: done✅️
+Creating certificates for kubernetes and etcd 📘
+[10.3.0.11] [cert] create certificates: done✅️
+[10.3.0.12] [cert] create certificates: done✅️
+[10.3.0.10] [cert] create certificates: done✅️
+Initializing master0 ☸️
+[10.3.0.10] [kubeadm-init] init master0: done✅️
+Installing Network plugin 🌐
+[10.3.0.10] [network] Add the flannel network plugin: done✅️
+Joining to nodes ☸️
+Joining to masters ☸️
+[10.3.0.20] [kubeadm-join] join to nodes: done✅️
+[10.3.0.21] [kubeadm-join] join to nodes: done✅️
+[10.3.0.11] [kubeadm-join] join to masters: done✅️
+[10.3.0.12] [kubeadm-join] join to masters: done✅️
+Waiting for all nodes to become ready. This can take up to 6m0s⏳
 NAME        STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
-10.3.0.10   Ready    master   56s   v1.17.9   10.3.0.10     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.11   Ready    master   28s   v1.17.9   10.3.0.11     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.12   Ready    master   28s   v1.17.9   10.3.0.12     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.20   Ready    <none>   11s   v1.17.9   10.3.0.20     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.21   Ready    <none>   11s   v1.17.9   10.3.0.21     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.10   Ready    master   57s   v1.17.9   10.3.0.10     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.11   Ready    master   29s   v1.17.9   10.3.0.11     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.12   Ready    master   29s   v1.17.9   10.3.0.12     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.20   Ready    <none>   17s   v1.17.9   10.3.0.20     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
+10.3.0.21   Ready    <none>   16s   v1.17.9   10.3.0.21     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
 
 Kubernetes High-Availability cluster deployment completed
 ```
