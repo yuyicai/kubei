@@ -6,14 +6,14 @@
     password和key两种认证方式二选一，实际使用时选择一个即可，如果两个都填写，将忽略password，只使用key
     配置示例：--jump-serve "--jump-server host=192.168.10.10,port=22,user=test,password=123456,key=$HOME/.ssh/jump.key"
     
---key string                        SSH key of the nodes.
+-h, --key string                        SSH key of the nodes.
     ssh连接s集群服务器的key，如果同时使用password和key，将忽略password，只使用key
-    配置示例：key $HOME/.ssh/node.key
+    配置示例：-k $HOME/.ssh/node.key
 
---password string                   SSH password of the nodes.
+-p, --password string                   SSH password of the nodes.
     ssh连接集群服务器的密码，如果同时使用password和key，将忽略password，只使用key
     如果使用普通用户部署，必须提供密码，因为sudo操作需要密码（如果你们普通用户sudo是免密的可省略）
-    配置示例：--password 123456
+    配置示例：-p 123456
 
 --port string                       SSH port of the nodes. (default "22")
     ssh连接集群服务器的端口
@@ -30,13 +30,17 @@
 # kubei init 参数
 
 ```
---masters strings                   The master nodes IP
+--cert-time int                     cert not after time, time units is year (default 10)
+    证书过期时间，年为单位
+    配置示例：--cert-time 50   （配置50年证书过期时间）
+
+-m, --masters strings                   The master nodes IP
     master节点 ip地址，可填写多个，使用英文的逗号隔开
-    配置示例：--masters 10.3.0.10,10.3.0.11,10.3.0.12
+    配置示例：-m 10.3.0.10,10.3.0.11,10.3.0.12
     
---workers strings                   The worker nodes IP
+-n, --nodes strings                   The worker nodes IP
     工作节点（即真正跑业务容器的节点） ip地址，可填写多个，使用英文的逗号隔开
-    配置示例：--workers 10.3.0.20,10.3.0.21
+    配置示例：-n 10.3.0.20,10.3.0.21
 
 --container-engine-version string   The Docker version.
     docker容器引擎版本，不加参数时使用最新版，版本支持18.09+
@@ -68,7 +72,7 @@
     kube是部署k8s组件，包括kubeadm、kubelet、kubectl、kubernetes-cni、crictl
     kubeadm是条用kubeadm对集群进行初始化，将nodes加入集群等工作，即创建集群这一步骤
     
---offline-file string               Path to offline file
+-f, --offline-file string               Path to offline file
     离线包路径
 ```
 

@@ -1,46 +1,26 @@
 # kubei
 
-`kubei` (Kubernetes installer) 是一个go开发的用来部署Kubernetes高可用集群的命令行工具，该工具可在`Windows`、`Linux`、`Mac`中运行
+`kubei` (Kubernetes installer) 是一个go开发的用来部署Kubernetes高可用集群的命令行工具  
 
-`kubei`原理：通过ssh连接到集群服务器，进行容器引擎安装、kubernetes组件安装、主机初始化配置、本地负载均衡器部署、调用kubeadm初始化集群master、调用kubeadm将主机加入节点
+`kubei`原理：通过ssh连接到集群服务器，进行容器引擎安装、kubernetes组件安装、主机初始化配置、高可用负载均衡器配置、调用kubeadm初始化集群master、调用kubeadm将主机节点加入集群
 
-提供离线部署功能，自定义证书过期时间
-
-支持使用普通用户（sudo用户）连接集群服务器进行安装部署，支持通过堡垒机连接集群服务器  
+# 功能
+ - 一键部署高可用kubernetes集群
+ - 离线部署 / 在线部署
+ - 自定证书过期时间
+ - 可使用普通用户部署安装(sudo用户)
+ - 可使用跳板机连接主机部署安装
 
 # 版本支持
 
-<table>
-    <thead>
-        <tr>
-            <th align="center" colspan="2">应用/系统</th>
-            <th align="center">版本</thalign="center">
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td align="center" colspan="2">Kubernetes</td>
-            <td align="center">1.16.X、1.17.X、1.18.X</td>
-        </tr>
-        <tr>
-            <td align="center">容器引擎</td>
-            <td align="center">目前只支持Docker</td>
-            <td align="center">18.09.X、19.XX.XX</td>
-        </tr>
-        <tr>
-            <td align="center">网络插件</td>
-            <td align="center">目前只支持flannel</td>
-            <td align="center">0.11.0</td>
-        </tr>
-        <tr>
-            <td align="center" colspan="2">系统</td>
-            <td align="center">Ubuntu16.04+、CentOS7.4+</td>
-        </tr>
-    </tbody>
-</table>
+| 应用/系统  |           版本            |
+| :--------: | :-----------------------: |
+| Kubernetes |  1.16.X、1.17.X、1.18.X   |
+|  容器引擎  | Docker: 18.09.X、19.XX.XX |
+|  网络插件  |      flannel: 0.11.0      |
+|    系统    | Ubuntu16.04+、CentOS7.4+  |
 
-
-*etcd版本由kubeadm对于版本默认确定*
+*etcd版为kubeadm默认对应版本*
 
 ![k8s-ha](./docs/images/kube-ha.svg)
 
@@ -58,90 +38,41 @@
 
 *如果要用密码做ssh登录验证，请查看[ssh用户参数说明](./docs/flags.md)*
 
-**下载离线包：**
+**1、下载离线包：**
 
 https://github.com/yuyicai/kubernetes-offline/releases
 
-下载部署程序
+**2、下载部署程序**
 
 https://github.com/yuyicai/kubei/releases
 
-**执行部署命令：**
+**3、执行部署命令：**
 
 ```
-./kubei init --key=$HOME/.ssh/k8s.key \
+./kubei init \
+ -k $HOME/.ssh/k8s.key \
  -m 10.3.0.10,10.3.0.11,10.3.0.12 \
  -n 10.3.0.20,10.3.0.21 \
  -f ./kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz
 ```
 
-部署过程及结果：
 
-```
-Checking SSH connect 🌐
-[10.3.0.10] [preflight] SSH connect: done✅️
-[10.3.0.11] [preflight] SSH connect: done✅️
-[10.3.0.12] [preflight] SSH connect: done✅️
-[10.3.0.20] [preflight] SSH connect: done✅️
-[10.3.0.21] [preflight] SSH connect: done✅️
-Sending Kubernetes offline pkg to nodes ✉️
-[10.3.0.10] [send] send kubernetes offline pkg: done✅️
-[10.3.0.21] [send] send kubernetes offline pkg: done✅️
-[10.3.0.12] [send] send kubernetes offline pkg: done✅️
-[10.3.0.20] [send] send kubernetes offline pkg: done✅️
-[10.3.0.11] [send] send kubernetes offline pkg: done✅️
-Installing Docker on all nodes 🐳
-[10.3.0.10] [container-engine] install Docker: done✅️
-[10.3.0.21] [container-engine] install Docker: done✅️
-[10.3.0.20] [container-engine] install Docker: done✅️
-[10.3.0.12] [container-engine] install Docker: done✅️
-[10.3.0.11] [container-engine] install Docker: done✅️
-Installing Kubernetes component ☸️
-[10.3.0.12] [kube] install Kubernetes component: done✅️
-[10.3.0.11] [kube] install Kubernetes component: done✅️
-[10.3.0.20] [kube] install Kubernetes component: done✅️
-[10.3.0.10] [kube] install Kubernetes component: done✅️
-[10.3.0.21] [kube] install Kubernetes component: done✅️
-Creating certificates for kubernetes and etcd 📘
-[10.3.0.11] [cert] create certificates: done✅️
-[10.3.0.12] [cert] create certificates: done✅️
-[10.3.0.10] [cert] create certificates: done✅️
-Initializing master0 ☸️
-[10.3.0.10] [kubeadm-init] init master0: done✅️
-Installing Network plugin 🌐
-[10.3.0.10] [network] Add the flannel network plugin: done✅️
-Joining to nodes ☸️
-Joining to masters ☸️
-[10.3.0.20] [kubeadm-join] join to nodes: done✅️
-[10.3.0.21] [kubeadm-join] join to nodes: done✅️
-[10.3.0.11] [kubeadm-join] join to masters: done✅️
-[10.3.0.12] [kubeadm-join] join to masters: done✅️
-Waiting for all nodes to become ready. This can take up to 6m0s⏳
-NAME        STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
-10.3.0.10   Ready    master   57s   v1.17.9   10.3.0.10     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.11   Ready    master   29s   v1.17.9   10.3.0.11     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.12   Ready    master   29s   v1.17.9   10.3.0.12     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.20   Ready    <none>   17s   v1.17.9   10.3.0.20     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
-10.3.0.21   Ready    <none>   16s   v1.17.9   10.3.0.21     <none>        Ubuntu 18.04.4 LTS   4.15.0-106-generic   docker://18.9.9
 
-Kubernetes High-Availability cluster deployment completed
-```
+[![asciicast](https://asciinema.org/a/353199.svg)](https://asciinema.org/a/353199)
 
 
 
-[更多安装示例](./docs/example.md)（指定安装版本，使用堡垒机连接等）
-
-[参数说明](./docs/flags.md)
+[更多安装示例](./docs/example.md)、[参数说明](./docs/flags.md)
 
 
 
 感谢：
 
-[cobra]( https://github.com/spf13/cobra ): 应用cil框架采用cobra
+[cobra]( https://github.com/spf13/cobra ): 命令框架采用`cobra`
 
-[kubeadm]( https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/cmd/phases/workflow/doc.go ): 子命令工作流采用了kubeadm workflow模块，可以单独执行每一个子命令流程
+[kubeadm]( https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/cmd/phases/workflow/doc.go ): 子命令工作流采用`kubeadm workflow`模块  
 
-[kubespray]( https://github.com/kubernetes-sigs/kubespray/blob/master/docs/ha-mode.md ): 高可用配置直接使用了kubespray项目的配置
+[kubespray]( https://github.com/kubernetes-sigs/kubespray/blob/master/docs/ha-mode.md ): 高可用配置采用`kubespray`项目的配置  
 
 
 

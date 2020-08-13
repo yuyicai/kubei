@@ -1,84 +1,58 @@
 # 部署示例
 
-*因为是示例，所以多用几个系统版本，实际部署中，最好还是统一系统版本*
-
-|   主机    | 集群角色 |      系统版本      |
-| :-------: | :------: | :----------------: |
-| 10.3.0.10 |  master  | Ubuntu 18.04.3 LTS |
-| 10.3.0.11 |  master  | Ubuntu 16.04.6 LTS |
-| 10.3.0.12 |  master  |     CentOS 7.4     |
-| 10.3.0.20 |  worker  |     CentOS 7.7     |
-| 10.3.0.21 |  worker  | Ubuntu 18.04.3 LTS |
-
-
-
-## 使用key作为ssh登录认证部署
+## 使用密码作为ssh登录认证部署
 
 ```
-./kubei init --key=$HOME/.ssh/k8s.key \
- --masters 10.3.0.10,10.3.0.11,10.3.0.12 \
- --workers 10.3.0.20,10.3.0.21 \
- --skip-headers
+./kubei init
+ -p 123456 \
+ -m 10.3.0.10,10.3.0.11,10.3.0.12 \
+ -n 10.3.0.20,10.3.0.21 \
+ -f ./kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz
 ```
-
-[![asciicast](https://asciinema.org/a/291242.svg)](https://asciinema.org/a/291242)
-
-
 
 ## 使用堡垒机
 
 ```
-./kubei init --key=$HOME/.ssh/k8s.key \
+./kubei init \
+ -k $HOME/.ssh/k8s.key \
  --jump-server "host=47.113.102.111,port=22,user=deer,key=$HOME/.ssh/jump.key" \
- --masters 10.3.0.10,10.3.0.11,10.3.0.12 \
- --workers 10.3.0.20,10.3.0.21 \
- --skip-headers
+ -m 10.3.0.10,10.3.0.11,10.3.0.12 \
+ -n 10.3.0.20,10.3.0.21 \
+ -f ./kube_v1.17.9-docker_v18.09.9-flannel_v0.11.0-amd64.tgz
 ```
-
-[![asciicast](https://asciinema.org/a/291262.svg)](https://asciinema.org/a/291262)
-
 
 
 ## 指定版本
 
+在线安装可以选择版本，离线安装已离线包里的版本为准  
 ```
-./kubei init --key=$HOME/.ssh/k8s.key \
- --masters 10.3.0.10,10.3.0.11,10.3.0.12 \
- --workers 10.3.0.20,10.3.0.21 \
+./kubei init \
+ -k $HOME/.ssh/k8s.key \
+ -m 10.3.0.10,10.3.0.11,10.3.0.12 \
+ -n 10.3.0.20,10.3.0.21 \
  --kubernetes-version 1.16.4 \
- --container-engine-version 18.09.9 \
- --skip-headers
+ --container-engine-version 18.09.9
 ```
-
-[![asciicast](https://asciinema.org/a/291263.svg)](https://asciinema.org/a/291263)
-
 
 
 ## 重置集群
 
 ```
-./kubei reset --key=$HOME/.ssh/k8s.key \
- --masters 10.3.0.10,10.3.0.11,10.3.0.12 \
- --workers 10.3.0.20,10.3.0.21 \
- --skip-headers
+./kubei reset \
+ -k $HOME/.ssh/k8s.key \
+ -m 10.3.0.10,10.3.0.11,10.3.0.12 \
+ -n 10.3.0.20,10.3.0.21
 ```
-
-[![asciicast](https://asciinema.org/a/291265.svg)](https://asciinema.org/a/291265)
-
-
 
 ## 重置所有
 
 重置集群同时删除容器引擎和kubernetes相关组件
 
 ```
-./kubei reset --key=$HOME/.ssh/k8s.key \
- --masters 10.3.0.10,10.3.0.11,10.3.0.12 \
- --workers 10.3.0.20,10.3.0.21 \
+./kubei reset \
+ -k $HOME/.ssh/k8s.key \
+ -m 10.3.0.10,10.3.0.11,10.3.0.12 \
+ -n 10.3.0.20,10.3.0.21 \
  --remove-container-engine \
- --remove-kubernetes-component \
- --skip-headers
+ --remove-kubernetes-component
 ```
-
-[![asciicast](https://asciinema.org/a/291266.svg)](https://asciinema.org/a/291266)
-
