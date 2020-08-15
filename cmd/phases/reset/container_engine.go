@@ -3,8 +3,8 @@ package reset
 import (
 	"errors"
 	"github.com/yuyicai/kubei/cmd/phases"
-	"github.com/yuyicai/kubei/config/options"
-	resetphases "github.com/yuyicai/kubei/phases/reset"
+	"github.com/yuyicai/kubei/internal/options"
+	resetphases "github.com/yuyicai/kubei/internal/phases/reset"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 )
 

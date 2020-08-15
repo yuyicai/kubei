@@ -1,7 +1,7 @@
 package phases
 
 import (
-	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/internal/rundata"
 )
 
 type RunData interface {

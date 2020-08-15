@@ -6,8 +6,8 @@ import (
 
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
-	"github.com/yuyicai/kubei/config/options"
-	containerphases "github.com/yuyicai/kubei/phases/container"
+	"github.com/yuyicai/kubei/internal/options"
+	containerphases "github.com/yuyicai/kubei/internal/phases/container"
 )
 
 // NewContainerEnginePhase creates a kubei workflow phase that implements handling of container engine.

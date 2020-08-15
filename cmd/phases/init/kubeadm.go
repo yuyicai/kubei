@@ -9,9 +9,9 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
 	"github.com/yuyicai/kubei/cmd/phases"
-	"github.com/yuyicai/kubei/config/options"
-	kubeadmphases "github.com/yuyicai/kubei/phases/kubeadm"
-	networkphases "github.com/yuyicai/kubei/phases/network"
+	"github.com/yuyicai/kubei/internal/options"
+	kubeadmphases "github.com/yuyicai/kubei/internal/phases/kubeadm"
+	networkphases "github.com/yuyicai/kubei/internal/phases/network"
 )
 
 // NewKubeadmPhase creates a kubei workflow phase that implements handling of kubeadm.

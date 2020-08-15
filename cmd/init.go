@@ -8,9 +8,9 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
 	initphases "github.com/yuyicai/kubei/cmd/phases/init"
-	"github.com/yuyicai/kubei/config/options"
-	"github.com/yuyicai/kubei/config/rundata"
-	"github.com/yuyicai/kubei/preflight"
+	"github.com/yuyicai/kubei/internal/options"
+	"github.com/yuyicai/kubei/internal/preflight"
+	"github.com/yuyicai/kubei/internal/rundata"
 )
 
 // NewCmdInit returns "kubei init" command.

@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"github.com/yuyicai/kubei/cmd/phases"
-	"github.com/yuyicai/kubei/config/options"
-	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/internal/options"
+	"github.com/yuyicai/kubei/internal/rundata"
 )
 
 // runOptions defines all the init options exposed via flags by kubei.

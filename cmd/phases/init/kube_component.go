@@ -6,8 +6,8 @@ import (
 
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
-	"github.com/yuyicai/kubei/config/options"
-	kubephases "github.com/yuyicai/kubei/phases/kube"
+	"github.com/yuyicai/kubei/internal/options"
+	kubephases "github.com/yuyicai/kubei/internal/phases/kube"
 )
 
 // NewKubeComponentPhase creates a kubei workflow phase that implements handling of kube.

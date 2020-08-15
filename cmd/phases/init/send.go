@@ -7,8 +7,8 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
 	"github.com/yuyicai/kubei/cmd/phases"
-	"github.com/yuyicai/kubei/config/options"
-	sendphases "github.com/yuyicai/kubei/phases/send"
+	"github.com/yuyicai/kubei/internal/options"
+	sendphases "github.com/yuyicai/kubei/internal/phases/send"
 )
 
 // NewSendPhase creates a kubei workflow phase that implements handling of send.

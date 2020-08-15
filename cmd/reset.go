@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/yuyicai/kubei/preflight"
+	"github.com/yuyicai/kubei/internal/preflight"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -9,8 +9,8 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
 	phases "github.com/yuyicai/kubei/cmd/phases/reset"
-	"github.com/yuyicai/kubei/config/options"
-	"github.com/yuyicai/kubei/config/rundata"
+	"github.com/yuyicai/kubei/internal/options"
+	"github.com/yuyicai/kubei/internal/rundata"
 )
 
 // NewCmdreset returns "kubei reset" command.

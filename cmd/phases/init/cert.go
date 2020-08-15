@@ -6,8 +6,8 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
 	"github.com/yuyicai/kubei/cmd/phases"
-	"github.com/yuyicai/kubei/config/options"
-	certphases "github.com/yuyicai/kubei/phases/cert"
+	"github.com/yuyicai/kubei/internal/options"
+	certphases "github.com/yuyicai/kubei/internal/phases/cert"
 )
 
 // NewCertPhase creates a kubei workflow phase that implements handling of cert.
