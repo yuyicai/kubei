@@ -144,28 +144,62 @@ func joinNode(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kub
 
 func CheckNodesReady(c *rundata.Cluster) error {
 	return c.RunOnFirstMaster(func(node *rundata.Node) error {
-		output, err := checkNodesReady(node, constants.DefaultWaitNodeInterval, constants.DefaultWaitNodeTimeout)
-		if err != nil {
-			return err
+		nodes := c.ClusterNodes.GetAllNodes()
+		var output string
+		var err error
+
+		if c.NetworkPlugins.Type == "none" {
+			output, err = checkNodesWithNotNetWorkPlugin(node, nodes, constants.DefaultWaitNodeInterval, constants.DefaultWaitNodeTimeout)
+			if err != nil {
+				return err
+			}
+		} else {
+			output, err = checkNodesReady(node, nodes, constants.DefaultWaitNodeInterval, constants.DefaultWaitNodeTimeout)
+			if err != nil {
+				return err
+			}
 		}
+
 		fmt.Println(output, "\nKubernetes High-Availability cluster deployment completed")
 		return nil
 	})
 }
 
-func checkNodesReady(node *rundata.Node, interval, timeout time.Duration) (string, error) {
+func checkNodesReady(node *rundata.Node, nodes []*rundata.Node, interval, timeout time.Duration) (string, error) {
 	var str string
 	color.HiBlue("Waiting for all nodes to become ready. This can take up to %v⏳\n", timeout)
 	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		var output []byte
 		output, _ = node.RunOut("kubectl get nodes -owide")
 		str = string(output)
+		for _, n := range nodes {
+			if !strings.Contains(str, n.Name) {
+				return false, nil
+			}
+		}
 		if strings.Contains(str, "NotReady") {
 			return false, nil
-		} else if strings.Contains(str, "Ready") {
-			return true, nil
 		}
-		return false, nil
+		return true, nil
+	}); err != nil {
+		return "", err
+	}
+	return str, nil
+}
+
+func checkNodesWithNotNetWorkPlugin(node *rundata.Node, nodes []*rundata.Node, interval, timeout time.Duration) (string, error) {
+	var str string
+	color.HiBlue("Waiting for all nodes join to Kubernetes cluster. This can take up to %v⏳\n", timeout)
+	if err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
+		var output []byte
+		output, _ = node.RunOut("kubectl get nodes -owide")
+		str = string(output)
+		for _, n := range nodes {
+			if !strings.Contains(str, n.Name) {
+				return false, nil
+			}
+		}
+		return true, nil
 	}); err != nil {
 		return "", err
 	}

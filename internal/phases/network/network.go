@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 
+	"github.com/fatih/color"
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/internal/rundata"
@@ -11,8 +12,10 @@ import (
 func Network(c *rundata.Cluster) error {
 	switch c.NetworkPlugins.Type {
 	case "none":
-		klog.Info("[network] Does not network plugin")
+		color.HiBlue("Does not install network plugin 🌐")
+		color.HiYellow("You should install network plugin by yourself after init the kubernetes cluster")
 	case "flannel":
+		color.HiBlue("Installing flannel network plugin 🌐")
 		return Flannel(c)
 	case "calico":
 		//TODO

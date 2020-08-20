@@ -73,6 +73,8 @@ func (k *Kubei) ApplyTo(data *rundata.Kubei) {
 		setNodesInstallType(data.ClusterNodes.GetAllNodes())
 	}
 
+	data.NetworkPlugins.Type = k.NetworkType
+
 	data.CertNotAfterTime = k.CertNotAfterTime
 }
 

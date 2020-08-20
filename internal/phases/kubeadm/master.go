@@ -16,6 +16,7 @@ import (
 
 // InitMaster init master0
 func InitMaster(c *rundata.Cluster) error {
+	color.HiBlue("Initializing master0 ☸️")
 	return c.RunOnFirstMaster(func(node *rundata.Node) error {
 		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
 		if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {

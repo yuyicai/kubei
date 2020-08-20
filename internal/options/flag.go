@@ -28,6 +28,7 @@ const (
 	OfflineFile               = "offline-file"
 	ShortOfflineFile          = "f"
 	CertNotAfterTime          = "cert-time"
+	NetworkPlugin             = "network-plugin"
 )
 
 func AddResetFlags(flagSet *flag.FlagSet, options *Reset) {
@@ -91,11 +92,11 @@ func AddKubeadmConfigFlags(flagSet *flag.FlagSet, options *Kubeadm) {
 
 	flagSet.StringVar(
 		&options.Networking.ServiceSubnet, ServiceCidr, constants.DefaultServiceSubnet,
-		"Use alternative range of IP address for service VIPs.",
+		"Use alternative range of IP address for service VIPs",
 	)
 	flagSet.StringVar(
 		&options.Networking.PodSubnet, PodNetworkCidr, constants.DefaultPodNetworkCidr,
-		"Specify range of IP addresses for the pod network. If set, the control plane will automatically allocate CIDRs for every node.",
+		"Specify range of IP addresses for the pod network",
 	)
 
 	AddImageMetaFlags(flagSet, &options.ImageRepository)
@@ -117,7 +118,7 @@ func AddImageMetaFlags(flagSet *flag.FlagSet, imageRepository *string) {
 
 func AddJumpServerFlags(flagSet *flag.FlagSet, userInfo *map[string]string) {
 	flagSet.StringToStringVar(userInfo, JumpServer, *userInfo,
-		"Jump server user info, apply with --jump-server \"host=IP,port=22,user=your-user,password=your-password,key=key-path\"",
+		"Jump server user info",
 	)
 }
 
@@ -130,5 +131,11 @@ func AddOfflinePackageFlags(flagSet *flag.FlagSet, pkg *string) {
 func AddCertNotAfterTimeFlags(flagSet *flag.FlagSet, year *int) {
 	flagSet.IntVar(year, CertNotAfterTime, constants.DefaultCertNotAfterYear,
 		"cert not after time, time units is year",
+	)
+}
+
+func AddNetworkPluginFlags(flagSet *flag.FlagSet, networkType *string) {
+	flagSet.StringVar(networkType, NetworkPlugin, constants.DefaulNetworkPlugin,
+		"network plugin",
 	)
 }

@@ -15,6 +15,7 @@ type Kubei struct {
 	JumpServer       map[string]string
 	OfflineFile      string
 	CertNotAfterTime int
+	NetworkType      string
 }
 
 type Kubernetes struct {

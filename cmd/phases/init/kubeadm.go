@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/fatih/color"
 	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 
@@ -33,6 +32,7 @@ func getKubeadmPhaseFlags() []string {
 		options.ControlPlaneEndpoint,
 		options.ImageRepository,
 		options.PodNetworkCidr,
+		options.NetworkPlugin,
 		options.ServiceCidr,
 		options.Masters,
 		options.Workers,
@@ -56,23 +56,23 @@ func runKubeadm(c workflow.RunData) error {
 		return err
 	}
 
-	color.HiBlue("Initializing master0 ☸️")
 	// init master0
 	if err := kubeadmphases.InitMaster(cluster); err != nil {
 		return err
 	}
 
 	// add network plugin
-	color.HiBlue("Installing Network plugin 🌐")
 	if err := networkphases.Network(cluster); err != nil {
 		return err
 	}
 
 	g := errgroup.WithCancel(context.Background())
+
 	// join to master nodes
 	g.Go(func(ctx context.Context) error {
 		return kubeadmphases.JoinControlPlane(cluster)
 	})
+
 	// join to worker nodes
 	// and set ha
 	g.Go(func(ctx context.Context) error {
