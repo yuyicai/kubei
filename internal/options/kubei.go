@@ -68,13 +68,13 @@ func (k *Kubei) ApplyTo(data *rundata.Kubei) {
 		}
 	}
 
-	if k.OfflineFile != "" {
-		data.OfflineFile = k.OfflineFile
+	if data.Online {
 		setNodesInstallType(data.ClusterNodes.GetAllNodes())
 	}
 
 	data.NetworkPlugins.Type = k.NetworkType
-
+	data.OfflineFile = k.OfflineFile
+	data.Online = k.Online
 	data.CertNotAfterTime = k.CertNotAfterTime
 }
 
@@ -95,6 +95,6 @@ func setNodesHost(nodes *[]*rundata.Node, optionsNodes []string) {
 
 func setNodesInstallType(nodes []*rundata.Node) {
 	for _, node := range nodes {
-		node.InstallType = constants.InstallTypeOffline
+		node.InstallType = constants.InstallTypeOnline
 	}
 }

@@ -77,6 +77,7 @@ func addInitConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
 	options.AddOfflinePackageFlags(flagSet, &k.OfflineFile)
 	options.AddCertNotAfterTimeFlags(flagSet, &k.CertNotAfterTime)
 	options.AddNetworkPluginFlags(flagSet, &k.NetworkType)
+	options.AddOnlineFlags(flagSet, &k.Online)
 }
 
 func newInitOptions() *runOptions {

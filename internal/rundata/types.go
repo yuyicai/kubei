@@ -104,6 +104,7 @@ type Kubei struct {
 	Reset            Reset
 	Addons           Addons
 	OfflineFile      string
+	Online           bool
 	CertNotAfterTime int
 }
 

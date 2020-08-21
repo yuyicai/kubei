@@ -2,10 +2,10 @@ package send
 
 import (
 	"fmt"
-	"github.com/fatih/color"
 	"path"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/internal/constants"
@@ -13,6 +13,7 @@ import (
 )
 
 func Send(c *rundata.Cluster) error {
+	color.HiBlue("Sending Kubernetes offline pkg to nodes ✉️")
 	return c.RunOnAllNodes(func(node *rundata.Node) error {
 		if err := send(node, c.Kubei); err != nil {
 			return err

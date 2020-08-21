@@ -29,6 +29,7 @@ const (
 	ShortOfflineFile          = "f"
 	CertNotAfterTime          = "cert-time"
 	NetworkPlugin             = "network-plugin"
+	Online                    = "install-online"
 )
 
 func AddResetFlags(flagSet *flag.FlagSet, options *Reset) {
@@ -137,5 +138,12 @@ func AddCertNotAfterTimeFlags(flagSet *flag.FlagSet, year *int) {
 func AddNetworkPluginFlags(flagSet *flag.FlagSet, networkType *string) {
 	flagSet.StringVar(networkType, NetworkPlugin, constants.DefaulNetworkPlugin,
 		"network plugin",
+	)
+}
+
+func AddOnlineFlags(flagSet *flag.FlagSet, options *bool) {
+	flagSet.BoolVar(
+		options, Online, *options,
+		"If true, install kubernetes cluster online",
 	)
 }
