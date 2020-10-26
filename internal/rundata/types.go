@@ -19,6 +19,10 @@ type Cluster struct {
 	Mutex   sync.Mutex
 }
 
+func (c *Cluster) String() string {
+	return fmt.Sprintf("%+v\n%+v", c.Kubei, c.Kubeadm)
+}
+
 func (c *Cluster) RunOnAllNodes(f func(*Node) error) error {
 	return run(c.ClusterNodes.GetAllNodes(), f)
 }

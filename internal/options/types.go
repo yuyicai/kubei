@@ -1,7 +1,7 @@
 package options
 
 type Kubeadm struct {
-	Version              string
+	//Version              string
 	ControlPlaneEndpoint string
 	ImageRepository      string
 	Networking           Networking

@@ -59,6 +59,7 @@ func (Apt) Docker(installTyped string, d rundata.Docker) (string, error) {
 		apt-get update -qq >/dev/null
 		{{- if ne .version "" }}
 		DOCKER_VER=$(apt-cache madison docker-ce | awk '/{{ .version }}/ {print$3}' | head -1)
+		echo "kubernetes version: $DOCKER_VER"
 		apt-get -y install -qq docker-ce=$DOCKER_VER docker-ce-cli=$DOCKER_VER containerd.io
 		{{- else }}
 		apt-get -y install -qq docker-ce docker-ce-cli containerd.io
@@ -127,6 +128,7 @@ func (Apt) KubeComponent(version, installType string) (string, error) {
 		apt-get update -qq
 		{{- if ne .version "" }}
 		KUBE_VER=$(apt-cache madison kubelet | awk '/{{ .version }}/ {print$3}' | head -1)
+		echo "kubernetes version: $KUBE_VER"
 		apt-get install -qq -y --allow-change-held-packages kubelet=$KUBE_VER kubeadm=$KUBE_VER kubectl=$KUBE_VER
 		{{- else }}
 		apt-get install -qq -y --allow-change-held-packages kubelet kubeadm kubectl
@@ -200,7 +202,8 @@ func (Yum) Docker(installType string, d rundata.Docker) (string, error) {
 		yum-config-manager --add-repo \
 		  https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
 		{{- if ne .version "" }}
-		DOCKER_VER=$(yum list docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
+		DOCKER_VER=$(yum list -y docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
+		echo "docker-ce version: $DOCKER_VER"
 		yum install -y -q docker-ce-$DOCKER_VER docker-ce-cli-$DOCKER_VER containerd.io
 		{{- else }}
 		yum install -y -q docker-ce docker-ce-cli containerd.io
@@ -233,7 +236,7 @@ func (Yum) Containerd(version string) (string, error) {
         yum-config-manager --add-repo \
           https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
         {{- if ne .version "" }}
-        CONTAINERD_VER=$(yum list docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
+        CONTAINERD_VER=$(yum list -y docker-ce --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
         yum install -y -q containerd.io=CONTAINERD_VER
         {{- else }}
         yum install -y -q containerd.io
@@ -273,7 +276,8 @@ func (Yum) KubeComponent(version, installType string) (string, error) {
 		EOF
 		{{- template "selinux" . -}}
 		{{- if ne .version "" }}
-		KUBE_VER=$(yum list kubelet --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
+		KUBE_VER=$(yum list -y kubelet --showduplicates | awk '/{{ .version }}/ {print$2}' | tail -1 | sed 's/[[:digit:]]://')
+		echo "kubernetes version: $KUBE_VER"
 		yum install -y kubelet-$KUBE_VER kubeadm-$KUBE_VER kubectl-$KUBE_VER --disableexcludes=kubernetes
 		{{- else }}
 		yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
