@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/fatih/color v1.7.0
 	github.com/go-kratos/kratos v0.5.0
+	github.com/heroku/docker-registry-client v0.0.0-20190909225348-afc9e1acc3d5
 	github.com/lithammer/dedent v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/pkg/errors v0.9.1
