@@ -8,6 +8,7 @@ import (
 	"k8s.io/klog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/heroku/docker-registry-client/registry"
 	"github.com/pkg/errors"
@@ -27,8 +28,8 @@ func DownloadImage(imageUrl, user, password, destPath string) error {
 }
 
 func downloadImageFromRepository(hub *registry.Registry, repository, tag, destPath string) error {
-	// todo get name from repository
-	fw, err := os.Create(repository)
+	file := fmt.Sprintf("%s_%s", strings.ReplaceAll(repository, "/", "-"), tag)
+	fw, err := os.Create(filepath.Join(destPath, file))
 	if err != nil {
 		return err
 	}
@@ -75,6 +76,7 @@ func downloadFileFromRepository(hub *registry.Registry, repository, tag, destPat
 		if err := writToFile(blob, destPath); err != nil {
 			return errors.Wrapf(err, "failed to download blob: %s/%s", repository, layer.Digest)
 		}
+		blob.Close()
 	}
 	return nil
 }

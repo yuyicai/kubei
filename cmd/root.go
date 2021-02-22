@@ -26,6 +26,7 @@ func NewKubeiCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 	cmds.AddCommand(NewCmdInit(out, nil))
 	cmds.AddCommand(NewCmdReset(out, nil))
 	cmds.AddCommand(NewCmdVersion(out))
+	cmds.AddCommand(NewCmdDownload(out))
 	return cmds
 
 }

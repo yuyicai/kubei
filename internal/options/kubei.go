@@ -72,7 +72,7 @@ func (k *Kubei) ApplyTo(data *rundata.Kubei) {
 		setNodesInstallType(data.ClusterNodes.GetAllNodes(), constants.InstallTypeOnline)
 		data.Online = k.Online
 	} else {
-		setNodesInstallType(data.ClusterNodes.GetAllNodes(), constants.InstallTypeOnline)
+		setNodesInstallType(data.ClusterNodes.GetAllNodes(), constants.InstallTypeOffline)
 		data.OfflineFile = k.OfflineFile
 	}
 

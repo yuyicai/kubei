@@ -36,7 +36,7 @@ func clusterNodesCfg(c *ClusterNodes) {
 
 func nodeCfg(node *Node) {
 	if node.InstallType == "" {
-		node.InstallType = constants.InstallTypeOnline
+		node.InstallType = constants.InstallTypeOffline
 	}
 }
 
