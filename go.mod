@@ -7,6 +7,7 @@ require (
 	github.com/go-kratos/kratos v0.5.0
 	github.com/heroku/docker-registry-client v0.0.0-20190909225348-afc9e1acc3d5
 	github.com/lithammer/dedent v1.1.0
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.11.0
