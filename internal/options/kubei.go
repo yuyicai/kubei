@@ -61,6 +61,7 @@ func (k *Kubei) ApplyTo(data *rundata.Kubei) {
 	k.ContainerEngine.ApplyTo(&data.ContainerEngine)
 	k.ClusterNodes.ApplyTo(&data.ClusterNodes)
 	k.Reset.ApplyTo(&data.Reset)
+	k.Kubernetes.ApplyTo(&data.Kubernetes)
 
 	if len(k.JumpServer) > 0 {
 		if err := mapstructure.Decode(k.JumpServer, &data.JumpServer.HostInfo); err != nil {

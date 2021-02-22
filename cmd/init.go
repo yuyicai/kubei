@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"io"
+	"k8s.io/klog"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
@@ -32,6 +33,7 @@ func NewCmdInit(out io.Writer, initOptions *runOptions) *cobra.Command {
 
 			data := c.(*runData)
 			cluster = data.Cluster()
+			klog.V(8).Infof("init config:\n%+v", data.cluster)
 			return preflight.Prepare(cluster)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -77,6 +79,7 @@ func addInitConfigFlags(flagSet *flag.FlagSet, k *options.Kubei) {
 	options.AddOfflinePackageFlags(flagSet, &k.OfflineFile)
 	options.AddCertNotAfterTimeFlags(flagSet, &k.CertNotAfterTime)
 	options.AddNetworkPluginFlags(flagSet, &k.NetworkType)
+	options.AddKubernetesFlags(flagSet, &k.Kubernetes)
 	//options.AddOnlineFlags(flagSet, &k.Online)
 }
 

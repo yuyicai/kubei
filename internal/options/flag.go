@@ -87,11 +87,6 @@ func AddPublicUserInfoConfigFlags(flagSet *flag.FlagSet, options *PublicHostInfo
 
 func AddKubeadmConfigFlags(flagSet *flag.FlagSet, options *Kubeadm) {
 	flagSet.StringVar(
-		&options.Version, KubernetesVersion, options.Version,
-		"The Kubernetes version",
-	)
-
-	flagSet.StringVar(
 		&options.Networking.ServiceSubnet, ServiceCidr, constants.DefaultServiceSubnet,
 		"Use alternative range of IP address for service VIPs",
 	)
@@ -147,3 +142,12 @@ func AddOnlineFlags(flagSet *flag.FlagSet, options *bool) {
 		"If true, install kubernetes cluster online",
 	)
 }
+		
+func AddKubernetesFlags(flagSet *flag.FlagSet, options *Kubernetes) {
+	flagSet.StringVar(
+		&options.Version, KubernetesVersion, options.Version,
+		"The Kubernetes version",
+	)
+}
+
+
