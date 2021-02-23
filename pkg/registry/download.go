@@ -5,13 +5,16 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"k8s.io/klog"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/heroku/docker-registry-client/registry"
 	"github.com/pkg/errors"
+	"github.com/vbauerster/mpb/v6"
+	"github.com/vbauerster/mpb/v6/decor"
+	"k8s.io/klog"
 )
 
 func DownloadImage(imageUrl, user, password, destPath string) error {
@@ -68,15 +71,34 @@ func downloadFileFromRepository(hub *registry.Registry, repository, tag, destPat
 
 	for _, layer := range manifestV2.Layers {
 		klog.V(7).Infof("downloading layer: %v", layer)
+		p := mpb.New(
+			mpb.WithWidth(60),
+			mpb.WithRefreshRate(180*time.Millisecond),
+		)
+		bar := p.Add(
+			layer.Size,
+			mpb.NewBarFiller("[=>-|"),
+			mpb.PrependDecorators(
+				decor.CountersKibiByte("% .2f / % .2f"),
+			),
+			mpb.AppendDecorators(
+				decor.EwmaETA(decor.ET_STYLE_GO, 90),
+				decor.Name(" ] "),
+				decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
+			),
+		)
 		blob, err := hub.DownloadBlob(repository, layer.Digest)
 		if err != nil {
 			errors.Wrapf(err, "failed to download blob: %s/%s", repository, layer.Digest)
 		}
+		proxyReader := bar.ProxyReader(blob)
 
-		if err := writToFile(blob, destPath); err != nil {
+		if err := writToFile(proxyReader, destPath); err != nil {
 			return errors.Wrapf(err, "failed to download blob: %s/%s", repository, layer.Digest)
 		}
+
 		blob.Close()
+		proxyReader.Close()
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/pkg/errors"
 	"github.com/yuyicai/kubei/internal/phases/download"
 	"io"
 
@@ -8,7 +9,7 @@ import (
 	"k8s.io/klog"
 )
 
-const DefaultKubernetesVersion = "v1.20.0"
+const DefaultKubernetesVersion = "v1.20.4"
 
 func NewCmdDownload(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
@@ -18,11 +19,15 @@ func NewCmdDownload(out io.Writer) *cobra.Command {
 			return RunDownload(out, cmd)
 		},
 	}
-	cmd.Flags().StringP("kube-version", "", "v1.20.0", "kubernetes version")
+	cmd.Flags().StringP("kube-version", "", DefaultKubernetesVersion, "kubernetes version")
 	return cmd
 }
 
 func RunDownload(out io.Writer, cmd *cobra.Command) error {
 	klog.V(1).Infoln("download kubernetes files")
-	return download.KubeFiles(DefaultKubernetesVersion, "")
+	version, err := cmd.Flags().GetString("kube-version")
+	if err != nil {
+		return errors.Wrapf(err, "error accessing flag %s for command %s", "kube-version", cmd.Name())
+	}
+	return download.KubeFiles(version, "")
 }
