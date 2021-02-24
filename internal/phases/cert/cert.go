@@ -26,7 +26,7 @@ func CreateCert(c *rundata.Cluster) error {
 
 	certNotAfterTime := constants.Year * time.Duration(c.CertNotAfterTime)
 
-	if err := c.RunOnFirstMaster(func(node *rundata.Node) error {
+	if err := c.RunOnFirstMaster(func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(2).Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
 		klog.V(3).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host, certNotAfterTime)
 		c.Kubeadm.NodeRegistration.Name = node.Name
@@ -41,7 +41,7 @@ func CreateCert(c *rundata.Cluster) error {
 		return err
 	}
 
-	return c.RunOnOtherMasters(func(node *rundata.Node) error {
+	return c.RunOnOtherMasters(func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(2).Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
 		klog.V(3).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host)
 		//c.Mutex.Lock()

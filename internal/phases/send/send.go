@@ -14,7 +14,7 @@ import (
 
 func Send(c *rundata.Cluster) error {
 	color.HiBlue("Sending Kubernetes offline pkg to nodes ✉️")
-	return c.RunOnAllNodes(func(node *rundata.Node) error {
+	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
 		if err := send(node, c.Kubei); err != nil {
 			return err
 		}

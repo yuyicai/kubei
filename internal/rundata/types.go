@@ -19,82 +19,84 @@ type Cluster struct {
 	Mutex   sync.Mutex
 }
 
+type Tasks func(*Node, *Cluster) error
+
 func (c *Cluster) String() string {
 	return fmt.Sprintf("%+v\n%+v", c.Kubei, c.Kubeadm)
 }
 
-func (c *Cluster) RunOnAllNodes(f func(*Node) error) error {
-	return run(c.ClusterNodes.GetAllNodes(), f)
+func (c *Cluster) RunOnAllNodes(tasks Tasks) error {
+	return run(c.ClusterNodes.GetAllNodes(), c, tasks)
 }
 
-func (c *Cluster) RunOnMasters(f func(*Node) error) error {
-	return run(c.ClusterNodes.Masters, f)
+func (c *Cluster) RunOnMasters(tasks Tasks) error {
+	return run(c.ClusterNodes.Masters, c, tasks)
 }
 
-func (c *Cluster) RunOnWorkers(f func(*Node) error) error {
-	return run(c.ClusterNodes.Workers, f)
+func (c *Cluster) RunOnWorkers(tasks Tasks) error {
+	return run(c.ClusterNodes.Workers, c, tasks)
 }
 
-func (c *Cluster) RunOnWorkersAndPrintLog(f func(*Node) error, s string) error {
+func (c *Cluster) RunOnWorkersAndPrintLog(tasks Tasks, s string) error {
 	if len(c.ClusterNodes.Workers) == 0 {
 		return nil
 	}
 	fmt.Println(s)
-	return run(c.ClusterNodes.Workers, f)
+	return run(c.ClusterNodes.Workers, c, tasks)
 }
 
-func (c *Cluster) RunOnOtherMastersAndPrintLog(f func(*Node) error, s string) error {
+func (c *Cluster) RunOnOtherMastersAndPrintLog(tasks Tasks, s string) error {
 	if len(c.ClusterNodes.Masters) <= 1 {
 		return nil
 	}
 	fmt.Println(s)
-	return run(c.ClusterNodes.Masters[1:], f)
+	return run(c.ClusterNodes.Masters[1:], c, tasks)
 }
 
-func (c *Cluster) RunOnOtherMasters(f func(*Node) error) error {
+func (c *Cluster) RunOnOtherMasters(tasks Tasks) error {
 	if len(c.ClusterNodes.Masters) <= 1 {
 		return nil
 	}
 
-	return run(c.ClusterNodes.Masters[1:], f)
+	return run(c.ClusterNodes.Masters[1:], c, tasks)
 }
 
-func (c *Cluster) RunOnOtherMastersOneByOne(f func(*Node) error) error {
+func (c *Cluster) RunOnOtherMastersOneByOne(tasks Tasks) error {
 	if len(c.ClusterNodes.Masters) <= 1 {
 		return nil
 	}
 
 	for _, node := range c.ClusterNodes.Masters[1:] {
-		if err := runOne(node, f); err != nil {
+		if err := runOne(node, c, tasks); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *Cluster) RunOnFirstMaster(f func(*Node) error) error {
+func (c *Cluster) RunOnFirstMaster(f Tasks) error {
 	if len(c.ClusterNodes.Masters) == 0 {
 		return errors.New("not master")
 	}
 
-	return runOne(c.ClusterNodes.Masters[0], f)
+	return runOne(c.ClusterNodes.Masters[0], c, f)
 }
 
-func run(nodes []*Node, f func(*Node) error) error {
+func run(nodes []*Node, c *Cluster, f Tasks) error {
 	g := errgroup.WithCancel(context.Background())
 	g.GOMAXPROCS(constants.DefaultGOMAXPROCS)
 	for _, node := range nodes {
 		node := node
 		g.Go(func(ctx context.Context) error {
-			return runOne(node, f)
+			return runOne(node, c, f)
 		})
 	}
 
 	return g.Wait()
 }
 
-func runOne(node *Node, f func(*Node) error) error {
-	return f(node)
+func runOne(node *Node, c *Cluster, f Tasks) error {
+	return f(node, c)
 }
 
 type Kubei struct {

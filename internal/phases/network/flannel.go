@@ -11,7 +11,7 @@ import (
 )
 
 func Flannel(c *rundata.Cluster) error {
-	return c.RunOnFirstMaster(func(node *rundata.Node) error {
+	return c.RunOnFirstMaster(func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(3).Infof("[%s] [network] Add the flannel network plugin", node.HostInfo.Host)
 
 		text, err := tmpl.Flannel(c.Kubeadm.Networking.PodSubnet, c.NetworkPlugins.Flannel.Image.GetImage(), c.NetworkPlugins.Flannel.BackendType)

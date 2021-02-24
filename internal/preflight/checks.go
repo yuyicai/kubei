@@ -14,13 +14,13 @@ import (
 
 func Prepare(c *rundata.Cluster) error {
 	color.HiBlue("Checking SSH connect 🌐")
-	return c.RunOnAllNodes(func(node *rundata.Node) error {
+	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
 		return check(node, c.Kubei)
 	})
 }
 
 func CloseSSH(c *rundata.Cluster) error {
-	return c.RunOnAllNodes(func(node *rundata.Node) error {
+	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(1).Infof("[%s][close] Close ssh connect", node.HostInfo.Host)
 		return node.SSH.Close()
 	})

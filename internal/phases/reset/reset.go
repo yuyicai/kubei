@@ -12,7 +12,7 @@ import (
 
 func ResetKubeadm(c *rundata.Cluster) error {
 	apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
-	return c.RunOnAllNodes(func(node *rundata.Node) error {
+	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(2).Infof("[%s] [reset] Resetting node", node.HostInfo.Host)
 		if err := resetkubeadmOnNode(node, apiDomainName); err != nil {
 			return fmt.Errorf("[%s] [reset] Failed to reset node: %v", node.HostInfo.Host, err)
@@ -31,7 +31,7 @@ func resetkubeadmOnNode(node *rundata.Node, apiDomainName string) error {
 }
 
 func RemoveKubeComponente(c *rundata.Cluster) error {
-	return c.RunOnAllNodes(func(node *rundata.Node) error {
+	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
 		return removeKubeComponente(node)
 	})
 }
@@ -51,7 +51,7 @@ func removeKubeComponentOnNode(node *rundata.Node) error {
 }
 
 func RemoveContainerEngine(c *rundata.Cluster) error {
-	return c.RunOnAllNodes(func(node *rundata.Node) error {
+	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
 		return removeContainerEngine(node)
 	})
 }

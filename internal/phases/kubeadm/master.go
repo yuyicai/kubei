@@ -17,7 +17,7 @@ import (
 // InitMaster init master0
 func InitMaster(c *rundata.Cluster) error {
 	color.HiBlue("Initializing master0 ☸️")
-	return c.RunOnFirstMaster(func(node *rundata.Node) error {
+	return c.RunOnFirstMaster(func(node *rundata.Node, c *rundata.Cluster) error {
 		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
 		if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
 			return err
@@ -66,7 +66,7 @@ func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.K
 
 // JoinControlPlane join masters to ControlPlane
 func JoinControlPlane(c *rundata.Cluster) error {
-	return c.RunOnOtherMastersAndPrintLog(func(node *rundata.Node) error {
+	return c.RunOnOtherMastersAndPrintLog(func(node *rundata.Node, c *rundata.Cluster) error {
 		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
 		if err := system.SetHost(node, c.ClusterNodes.Masters[0].HostInfo.Host, apiDomainName); err != nil {
 			return err

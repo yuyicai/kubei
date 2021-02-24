@@ -23,7 +23,7 @@ func SendCert(c *rundata.Cluster) error {
 	encodedPrivatKeyBase64 := base64.StdEncoding.EncodeToString(encodedPrivatKey)
 	encodedPublicKeyBase64 := base64.StdEncoding.EncodeToString(encodedPublicKey)
 
-	return c.RunOnMasters(func(node *rundata.Node) error {
+	return c.RunOnMasters(func(node *rundata.Node, c *rundata.Cluster) error {
 		if err := sendServiceAccountKeyAndPublicKey(node, encodedPrivatKeyBase64, encodedPublicKeyBase64); err != nil {
 			return err
 		}

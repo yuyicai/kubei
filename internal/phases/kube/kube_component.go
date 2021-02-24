@@ -13,7 +13,7 @@ import (
 
 func InstallKubeComponent(c *rundata.Cluster) error {
 	color.HiBlue("Installing Kubernetes component ☸️")
-	return c.RunOnAllNodes(func(node *rundata.Node) error {
+	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(2).Infof("[%s] [kube] Installing Kubernetes component", node.HostInfo.Host)
 		if err := installKubeComponent(c.Kubernetes.Version, node); err != nil {
 			return fmt.Errorf("[%s] [kube] Failed to install Kubernetes component: %v", node.HostInfo.Host, err)

@@ -14,7 +14,7 @@ import (
 func InstallDocker(c *rundata.Cluster) error {
 
 	color.HiBlue("Installing Docker on all nodes 🐳")
-	return c.RunOnAllNodes(func(node *rundata.Node) error {
+	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(2).Infof("[%s] [container-engine] Installing Docker", node.HostInfo.Host)
 		if err := installDocker(node, c.ContainerEngine.Docker); err != nil {
 			return fmt.Errorf("[%s] [container-engine] Failed to install Docker: %v", node.HostInfo.Host, err)
