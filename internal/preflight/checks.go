@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/pkg/errors"
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/internal/constants"
@@ -55,7 +56,38 @@ func nodesCheck(node *rundata.Node, cfg *rundata.Kubei) error {
 		return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
 	}
 
+	if err := commandConntrackCheck(node); err != nil {
+		return err
+	}
+
 	return packageManagementTypeCheck(node)
+}
+
+func commandConntrackCheck(node *rundata.Node) error {
+	// https://github.com/kubernetes/kubernetes/blob/v1.18.0/cmd/kubeadm/app/preflight/checks.go#L1020
+	tmp := `
+if command -v %s >/dev/null 2>&1; then 
+  echo 'true' 
+else 
+  echo 'false' 
+fi
+`
+	out, err := node.RunOut(fmt.Sprintf(tmp, "conntrack"))
+	if err != nil {
+		return err
+	}
+
+	status := string(out)
+
+	if strings.Contains(status, "true") {
+		return nil
+	}
+	if strings.Contains(status, "false") {
+		klog.V(8).Info("conntrack no exists")
+		return errors.Errorf("can not find command: %s. you can install conntrack wiht \"yum install -y conntrack (CentOS) or apt install -y conntrack (Ubuntu)\"", "conntrack")
+	}
+	klog.V(8).Info("conntrack exists")
+	return nil
 }
 
 func sshCheck(node *rundata.Node, jumpServer *rundata.JumpServer) error {
