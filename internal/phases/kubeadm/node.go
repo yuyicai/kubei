@@ -160,7 +160,7 @@ func CheckNodesReady(c *rundata.Cluster) error {
 			}
 		}
 
-		fmt.Println(output, "\nKubernetes High-Availability cluster deployment completed")
+		fmt.Println(output, "\nHigh-Availability Kubernetes cluster deployment completed\n")
 		return nil
 	})
 }
