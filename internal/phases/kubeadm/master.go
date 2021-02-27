@@ -67,7 +67,7 @@ func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.K
 
 // JoinControlPlane join masters to ControlPlane
 func JoinControlPlane(c *rundata.Cluster) error {
-	return operator.RunOnOtherMastersAndPrintLog(c, func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnOtherMastersWithMsg(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
 		if err := system.SetHost(node, c.ClusterNodes.Masters[0].HostInfo.Host, apiDomainName); err != nil {
 			return err

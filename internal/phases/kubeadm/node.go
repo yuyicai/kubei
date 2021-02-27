@@ -22,7 +22,7 @@ import (
 
 //JoinNode join nodes
 func JoinNode(c *rundata.Cluster) error {
-	return operator.RunOnWorkersAndPrintLog(c, func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnWorkersWithMsg(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		if err := system.SwapOff(node); err != nil {
 			return err
 		}

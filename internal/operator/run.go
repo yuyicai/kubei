@@ -24,7 +24,7 @@ func RunOnWorkers(c *rundata.Cluster, tasks Tasks) error {
 	return run(c.ClusterNodes.Workers, c, tasks)
 }
 
-func RunOnWorkersAndPrintLog(c *rundata.Cluster, tasks Tasks, s string) error {
+func RunOnWorkersWithMsg(c *rundata.Cluster, tasks Tasks, s string) error {
 	if len(c.ClusterNodes.Workers) == 0 {
 		return nil
 	}
@@ -32,7 +32,7 @@ func RunOnWorkersAndPrintLog(c *rundata.Cluster, tasks Tasks, s string) error {
 	return run(c.ClusterNodes.Workers, c, tasks)
 }
 
-func RunOnOtherMastersAndPrintLog(c *rundata.Cluster, tasks Tasks, s string) error {
+func RunOnOtherMastersWithMsg(c *rundata.Cluster, tasks Tasks, s string) error {
 	if len(c.ClusterNodes.Masters) <= 1 {
 		return nil
 	}
