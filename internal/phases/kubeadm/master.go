@@ -9,6 +9,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/internal/constants"
+	"github.com/yuyicai/kubei/internal/operator"
 	"github.com/yuyicai/kubei/internal/phases/system"
 	"github.com/yuyicai/kubei/internal/rundata"
 	"github.com/yuyicai/kubei/internal/tmpl"
@@ -17,7 +18,7 @@ import (
 // InitMaster init master0
 func InitMaster(c *rundata.Cluster) error {
 	color.HiBlue("Initializing master0 ☸️")
-	return c.RunOnFirstMaster(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnFirstMaster(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
 		if err := system.SetHost(node, constants.LoopbackAddress, apiDomainName); err != nil {
 			return err
@@ -66,7 +67,7 @@ func initMaster(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.K
 
 // JoinControlPlane join masters to ControlPlane
 func JoinControlPlane(c *rundata.Cluster) error {
-	return c.RunOnOtherMastersAndPrintLog(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnOtherMastersAndPrintLog(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		apiDomainName, _, _ := net.SplitHostPort(c.Kubeadm.ControlPlaneEndpoint)
 		if err := system.SetHost(node, c.ClusterNodes.Masters[0].HostInfo.Host, apiDomainName); err != nil {
 			return err

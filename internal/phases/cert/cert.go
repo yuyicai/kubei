@@ -14,6 +14,7 @@ import (
 	kubeadmpkiutil "k8s.io/kubernetes/cmd/kubeadm/app/util/pkiutil"
 
 	"github.com/yuyicai/kubei/internal/constants"
+	"github.com/yuyicai/kubei/internal/operator"
 	"github.com/yuyicai/kubei/internal/rundata"
 	"github.com/yuyicai/kubei/pkg/pki"
 )
@@ -26,7 +27,7 @@ func CreateCert(c *rundata.Cluster) error {
 
 	certNotAfterTime := constants.Year * time.Duration(c.CertNotAfterTime)
 
-	if err := c.RunOnFirstMaster(func(node *rundata.Node, c *rundata.Cluster) error {
+	if err := operator.RunOnFirstMaster(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(2).Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
 		klog.V(3).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host, certNotAfterTime)
 		c.Kubeadm.NodeRegistration.Name = node.Name
@@ -41,7 +42,7 @@ func CreateCert(c *rundata.Cluster) error {
 		return err
 	}
 
-	return c.RunOnOtherMasters(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnOtherMasters(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(2).Infof("[%s] [cert] Creating certificate", node.HostInfo.Host)
 		klog.V(3).Infof("[%s] [cert] The cert not after time is %v", node.HostInfo.Host)
 		//c.Mutex.Lock()

@@ -10,6 +10,7 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 
+	"github.com/yuyicai/kubei/internal/operator"
 	"github.com/yuyicai/kubei/internal/rundata"
 	"github.com/yuyicai/kubei/pkg/pki"
 )
@@ -23,7 +24,7 @@ func SendCert(c *rundata.Cluster) error {
 	encodedPrivatKeyBase64 := base64.StdEncoding.EncodeToString(encodedPrivatKey)
 	encodedPublicKeyBase64 := base64.StdEncoding.EncodeToString(encodedPublicKey)
 
-	return c.RunOnMasters(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnMasters(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		if err := sendServiceAccountKeyAndPublicKey(node, encodedPrivatKeyBase64, encodedPublicKeyBase64); err != nil {
 			return err
 		}

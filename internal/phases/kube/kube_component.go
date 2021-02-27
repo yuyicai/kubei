@@ -6,6 +6,7 @@ import (
 	"github.com/fatih/color"
 	"k8s.io/klog"
 
+	"github.com/yuyicai/kubei/internal/operator"
 	"github.com/yuyicai/kubei/internal/phases/system"
 	"github.com/yuyicai/kubei/internal/rundata"
 	"github.com/yuyicai/kubei/internal/tmpl"
@@ -13,7 +14,7 @@ import (
 
 func InstallKubeComponent(c *rundata.Cluster) error {
 	color.HiBlue("Installing Kubernetes component ☸️")
-	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(2).Infof("[%s] [kube] Installing Kubernetes component", node.HostInfo.Host)
 		if err := installKubeComponent(c.Kubernetes.Version, node); err != nil {
 			return fmt.Errorf("[%s] [kube] Failed to install Kubernetes component: %v", node.HostInfo.Host, err)

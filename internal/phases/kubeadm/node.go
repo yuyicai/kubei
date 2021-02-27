@@ -14,6 +14,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/internal/constants"
+	"github.com/yuyicai/kubei/internal/operator"
 	"github.com/yuyicai/kubei/internal/phases/system"
 	"github.com/yuyicai/kubei/internal/rundata"
 	"github.com/yuyicai/kubei/internal/tmpl"
@@ -21,7 +22,7 @@ import (
 
 //JoinNode join nodes
 func JoinNode(c *rundata.Cluster) error {
-	return c.RunOnWorkersAndPrintLog(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnWorkersAndPrintLog(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		if err := system.SwapOff(node); err != nil {
 			return err
 		}
@@ -143,7 +144,7 @@ func joinNode(node *rundata.Node, kubeiCfg rundata.Kubei, kubeadmCfg rundata.Kub
 }
 
 func CheckNodesReady(c *rundata.Cluster) error {
-	return c.RunOnFirstMaster(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnFirstMaster(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		nodes := c.ClusterNodes.GetAllNodes()
 		var output string
 		var err error
@@ -210,13 +211,13 @@ func LoadOfflineImages(c *rundata.Cluster) error {
 
 	g := errgroup.WithCancel(context.Background())
 	g.Go(func(ctx context.Context) error {
-		if err := c.RunOnMasters(func(node *rundata.Node, c *rundata.Cluster) error {
+		if err := operator.RunOnMasters(c, func(node *rundata.Node, c *rundata.Cluster) error {
 			return loadOfflineImagesOnnode("master", node)
 		}); err != nil {
 			return err
 		}
 
-		if err := c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
+		if err := operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
 			return loadOfflineImagesOnnode("node", node)
 		}); err != nil {
 			return err

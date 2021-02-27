@@ -2,6 +2,7 @@ package preflight
 
 import (
 	"fmt"
+	"github.com/yuyicai/kubei/internal/operator"
 	"strings"
 
 	"github.com/fatih/color"
@@ -15,13 +16,13 @@ import (
 
 func Prepare(c *rundata.Cluster) error {
 	color.HiBlue("Checking SSH connect 🌐")
-	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		return check(node, c.Kubei)
 	})
 }
 
 func CloseSSH(c *rundata.Cluster) error {
-	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		klog.V(1).Infof("[%s][close] Close ssh connect", node.HostInfo.Host)
 		return node.SSH.Close()
 	})
@@ -84,7 +85,7 @@ fi
 	}
 	if strings.Contains(status, "false") {
 		klog.V(8).Info("conntrack no exists")
-		return errors.Errorf("can not find command: %s. you can install conntrack wiht \"yum install -y conntrack (CentOS) or apt install -y conntrack (Ubuntu)\"", "conntrack")
+		return errors.Errorf("can not find command: %s. you can install conntrack wiht \"yum install -y conntrack (CentOS) or apt update && apt install -y conntrack (Ubuntu)\"", "conntrack")
 	}
 	klog.V(8).Info("conntrack exists")
 	return nil

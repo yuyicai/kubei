@@ -9,12 +9,13 @@ import (
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/internal/constants"
+	"github.com/yuyicai/kubei/internal/operator"
 	"github.com/yuyicai/kubei/internal/rundata"
 )
 
 func Send(c *rundata.Cluster) error {
 	color.HiBlue("Sending Kubernetes offline pkg to nodes ✉️")
-	return c.RunOnAllNodes(func(node *rundata.Node, c *rundata.Cluster) error {
+	return operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		if err := send(node, c.Kubei); err != nil {
 			return err
 		}
