@@ -38,6 +38,9 @@ func ResetPrepare(c *rundata.Cluster) error {
 }
 
 func ExecPrepare(c *rundata.Cluster) error {
+	if err := nodesExistCheck(c); err != nil {
+		return err
+	}
 	color.HiBlue("Checking SSH connect 🌐")
 	return operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
 		return setSSH(node, c.Kubei)
@@ -56,8 +59,9 @@ func setSSH(node *rundata.Node, cfg *rundata.Kubei) error {
 		return fmt.Errorf("[preflight] Failed to set jump server: %v", err)
 	}
 	if err := setSSHConnect(node, &cfg.JumpServer); err != nil {
-		return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
+		return errors.Wrapf(err, "[%s] [preflight] Failed to set ssh connection", node.HostInfo.Host)
 	}
+	fmt.Printf("[%s] [preflight] SSH connect: %s\n", node.HostInfo.Host, color.HiGreenString("done✅️"))
 	return nil
 }
 
@@ -121,7 +125,6 @@ func setNodeSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error
 		return err
 	} else {
 		//Set up ssh connection direct
-		fmt.Printf("[%s] [preflight] SSH connect: %s\n", userInfo.Host, color.HiGreenString("done✅️"))
 		node.SSH, err = ssh.Connect(userInfo.Host, userInfo.Port, userInfo.User, userInfo.Password, userInfo.Key)
 		return err
 	}
@@ -149,6 +152,30 @@ func checkPackageManagementType(node *rundata.Node) error {
 		node.PackageManagementType = constants.PackageManagementTypeYum
 	default:
 		return fmt.Errorf("[%s] [preflight] Unsupported this system", hostInfo.Host)
+	}
+	return nil
+}
+
+func nodesExistCheck(c *rundata.Cluster) error {
+	nodes := c.ClusterNodes.GetAllNodes()
+	if len(nodes) == 0 {
+		return errors.New("can not find masters or nodes")
+	}
+	return nil
+}
+
+func mastersExistCheck(c *rundata.Cluster) error {
+	nodes := c.ClusterNodes.Masters
+	if len(nodes) == 0 {
+		return errors.New("can not find masters")
+	}
+	return nil
+}
+
+func workersExistCheck(c *rundata.Cluster) error {
+	nodes := c.ClusterNodes.Workers
+	if len(nodes) == 0 {
+		return errors.New("can not find nodes")
 	}
 	return nil
 }

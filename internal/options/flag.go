@@ -30,6 +30,7 @@ const (
 	CertNotAfterTime          = "cert-time"
 	NetworkPlugin             = "network-plugin"
 	Online                    = "install-online"
+	Command                   = "command"
 )
 
 func AddResetFlags(flagSet *flag.FlagSet, options *Reset) {
@@ -142,7 +143,7 @@ func AddOnlineFlags(flagSet *flag.FlagSet, options *bool) {
 		"If true, install kubernetes cluster online",
 	)
 }
-		
+
 func AddKubernetesFlags(flagSet *flag.FlagSet, options *Kubernetes) {
 	flagSet.StringVar(
 		&options.Version, KubernetesVersion, options.Version,
@@ -150,4 +151,9 @@ func AddKubernetesFlags(flagSet *flag.FlagSet, options *Kubernetes) {
 	)
 }
 
-
+func AddExecCommandFlags(flagSet *flag.FlagSet, cmd *string) {
+	flagSet.StringVar(
+		cmd, Command, *cmd,
+		"The command than will be executed on nodes",
+	)
+}
