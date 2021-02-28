@@ -25,7 +25,7 @@ func KubeFiles(tag, destPath string) error {
 		return err
 	}
 	if destPath == "" {
-		destPath = filepath.Join(home, "kubei", tag)
+		destPath = filepath.Join(home, ".kubei", tag)
 	}
 
 	klog.Infof("downloading %s.tar.gz to %s", ImageName, destPath)
