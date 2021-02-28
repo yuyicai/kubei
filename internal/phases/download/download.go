@@ -2,7 +2,7 @@ package download
 
 import (
 	"fmt"
-	"k8s.io/klog"
+	"github.com/fatih/color"
 	"path"
 	"path/filepath"
 
@@ -28,7 +28,10 @@ func KubeFiles(tag, destPath string) error {
 		destPath = filepath.Join(home, ".kubei", tag)
 	}
 
-	klog.Infof("downloading %s.tar.gz to %s", ImageName, destPath)
-
-	return registry.DownloadFile(imageUrl, "", "", destPath)
+	color.HiBlack("Downloading %s.tar.gz to %s", ImageName, destPath)
+	if err := registry.DownloadFile(imageUrl, "", "", destPath); err != nil {
+		return err
+	}
+	color.HiGreen("done✅️")
+	return nil
 }
