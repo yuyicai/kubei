@@ -32,7 +32,7 @@ func NewCmdReset(out io.Writer, runOptions *runOptions) *cobra.Command {
 
 			data := c.(*runData)
 			cluster = data.Cluster()
-			return preflight.Prepare(cluster)
+			return preflight.ResetPrepare(cluster)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return resetRunner.Run(args)

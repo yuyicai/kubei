@@ -2,7 +2,6 @@ package preflight
 
 import (
 	"fmt"
-	"github.com/yuyicai/kubei/internal/operator"
 	"strings"
 
 	"github.com/fatih/color"
@@ -10,14 +9,38 @@ import (
 	"k8s.io/klog"
 
 	"github.com/yuyicai/kubei/internal/constants"
+	"github.com/yuyicai/kubei/internal/operator"
 	"github.com/yuyicai/kubei/internal/rundata"
 	"github.com/yuyicai/kubei/pkg/ssh"
 )
 
-func Prepare(c *rundata.Cluster) error {
+func InitPrepare(c *rundata.Cluster) error {
 	color.HiBlue("Checking SSH connect 🌐")
 	return operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
-		return check(node, c.Kubei)
+		if err := setSSH(node, c.Kubei); err != nil {
+			return err
+		}
+		if err := checkCommandConntrack(node); err != nil {
+			return err
+		}
+		return checkPackageManagementType(node)
+	})
+}
+
+func ResetPrepare(c *rundata.Cluster) error {
+	color.HiBlue("Checking SSH connect 🌐")
+	return operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
+		if err := setSSH(node, c.Kubei); err != nil {
+			return err
+		}
+		return checkPackageManagementType(node)
+	})
+}
+
+func ExecPrepare(c *rundata.Cluster) error {
+	color.HiBlue("Checking SSH connect 🌐")
+	return operator.RunOnAllNodes(c, func(node *rundata.Node, c *rundata.Cluster) error {
+		return setSSH(node, c.Kubei)
 	})
 }
 
@@ -28,14 +51,17 @@ func CloseSSH(c *rundata.Cluster) error {
 	})
 }
 
-func check(node *rundata.Node, cfg *rundata.Kubei) error {
-	if err := jumpServerCheck(&cfg.JumpServer); err != nil {
+func setSSH(node *rundata.Node, cfg *rundata.Kubei) error {
+	if err := setJumpServer(&cfg.JumpServer); err != nil {
 		return fmt.Errorf("[preflight] Failed to set jump server: %v", err)
 	}
-	return nodesCheck(node, cfg)
+	if err := setSSHConnect(node, &cfg.JumpServer); err != nil {
+		return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
+	}
+	return nil
 }
 
-func jumpServerCheck(jumpServer *rundata.JumpServer) error {
+func setJumpServer(jumpServer *rundata.JumpServer) error {
 	if jumpServer.HostInfo.Host != "" && jumpServer.Client == nil {
 		hostInfo := jumpServer.HostInfo
 		klog.V(5).Infof("[preflight] Checking jump server %s", hostInfo.Host)
@@ -51,20 +77,7 @@ func jumpServerCheck(jumpServer *rundata.JumpServer) error {
 	return nil
 }
 
-func nodesCheck(node *rundata.Node, cfg *rundata.Kubei) error {
-
-	if err := sshCheck(node, &cfg.JumpServer); err != nil {
-		return fmt.Errorf("[%s] [preflight] Failed to set ssh connect: %v", node.HostInfo.Host, err)
-	}
-
-	if err := commandConntrackCheck(node); err != nil {
-		return err
-	}
-
-	return packageManagementTypeCheck(node)
-}
-
-func commandConntrackCheck(node *rundata.Node) error {
+func checkCommandConntrack(node *rundata.Node) error {
 	// https://github.com/kubernetes/kubernetes/blob/v1.18.0/cmd/kubeadm/app/preflight/checks.go#L1020
 	tmp := `
 if command -v %s >/dev/null 2>&1; then 
@@ -91,14 +104,14 @@ fi
 	return nil
 }
 
-func sshCheck(node *rundata.Node, jumpServer *rundata.JumpServer) error {
+func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	if node.SSH == nil {
-		return setSSHConnect(node, jumpServer)
+		return setNodeSSHConnect(node, jumpServer)
 	}
 	return nil
 }
 
-func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
+func setNodeSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	var err error
 	userInfo := node.HostInfo
 	//Set up ssh connection through jump server
@@ -114,7 +127,7 @@ func setSSHConnect(node *rundata.Node, jumpServer *rundata.JumpServer) error {
 	}
 }
 
-func packageManagementTypeCheck(node *rundata.Node) error {
+func checkPackageManagementType(node *rundata.Node) error {
 	hostInfo := node.HostInfo
 
 	klog.V(2).Infof("[%s] [preflight] Checking package management", hostInfo.Host)

@@ -2,10 +2,12 @@ package reset
 
 import (
 	"errors"
+
+	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
+
 	"github.com/yuyicai/kubei/cmd/phases"
 	"github.com/yuyicai/kubei/internal/options"
 	resetphases "github.com/yuyicai/kubei/internal/phases/reset"
-	"k8s.io/kubernetes/cmd/kubeadm/app/cmd/phases/workflow"
 )
 
 // NewResetPhase creates a kubei workflow phase that implements handling of cluster.

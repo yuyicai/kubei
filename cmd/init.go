@@ -34,7 +34,7 @@ func NewCmdInit(out io.Writer, initOptions *runOptions) *cobra.Command {
 			data := c.(*runData)
 			cluster = data.Cluster()
 			klog.V(8).Infof("init config:\n%+v", data.cluster)
-			return preflight.Prepare(cluster)
+			return preflight.InitPrepare(cluster)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return initRunner.Run(args)

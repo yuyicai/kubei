@@ -1,12 +1,13 @@
 package cmd
 
 import (
-	"github.com/pkg/errors"
-	"github.com/yuyicai/kubei/internal/phases/download"
 	"io"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
+
+	"github.com/yuyicai/kubei/internal/phases/download"
 )
 
 const DefaultKubernetesVersion = "v1.20.4"
@@ -19,7 +20,7 @@ func NewCmdDownload(out io.Writer) *cobra.Command {
 			return RunDownload(out, cmd)
 		},
 	}
-	cmd.Flags().StringP("kube-version", "", DefaultKubernetesVersion, "kubernetes version")
+	cmd.Flags().String("kube-version", DefaultKubernetesVersion, "kubernetes version")
 	return cmd
 }
 
