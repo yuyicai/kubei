@@ -2,12 +2,12 @@
 
 `kubei` (Kubernetes installer) 是一个go开发的用来部署Kubernetes高可用集群的命令行工具  
 
-`kubei`原理：通过ssh连接到集群服务器，进行容器引擎安装、kubernetes组件安装、主机初始化配置、高可用负载均衡器配置、调用kubeadm初始化集群master、调用kubeadm将主机节点加入集群
+`kubei`原理：通过ssh协议连接到集群服务器，进行容器引擎安装、kubernetes组件安装、主机初始化配置、高可用负载均衡器配置、调用kubeadm初始化集群master、调用kubeadm将主机节点加入集群
 
 # 功能
- - 一键部署高可用kubernetes集群
- - 离线部署 / 在线部署
- - 自定证书过期时间
+ - 下载离线文件
+ - 离线部署
+ - 自定证书过期时间（kubei进行证书签发，而不需要kubeadm进行签发）
  - 可使用普通用户部署安装(sudo用户)
  - 可使用跳板机连接主机部署安装
 
@@ -15,12 +15,8 @@
 
 | 应用/系统  |           版本            |
 | :--------: | :-----------------------: |
-| Kubernetes |  1.16.X、1.17.X、1.18.X   |
-|  容器引擎  | Docker: 18.09.X、19.XX.XX |
-|  网络插件  |      flannel: 0.11.0      |
+| Kubernetes |  1.17.X、1.18.X、1.19.X、1.20.X   |
 |    系统    | Ubuntu16.04+、CentOS7.4+  |
-
-*etcd版为kubeadm默认对应版本*
 
 ![k8s-ha](./docs/images/kube-ha.svg)
 
@@ -38,13 +34,16 @@
 
 *如果要用密码做ssh登录验证，请查看[ssh用户参数说明](./docs/flags.md)*
 
-**1、下载离线包：**
-
-https://github.com/yuyicai/kubernetes-offline/releases
-
-**2、下载部署程序**
+**1、下载部署程序**
 
 https://github.com/yuyicai/kubei/releases
+
+**2、下载离线包：**  
+离线包从阿里云镜像仓库下载提取，方便快速
+
+```
+./kubei download
+```
 
 **3、执行部署命令：**
 
