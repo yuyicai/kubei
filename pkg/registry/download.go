@@ -78,11 +78,8 @@ func downloadFileFromRepository(hub *registry.Registry, repository, tag, destPat
 		bar := p.Add(
 			layer.Size,
 			mpb.NewBarFiller("[=>-|"),
-			mpb.PrependDecorators(
-				decor.CountersKibiByte("% .2f / % .2f"),
-			),
 			mpb.AppendDecorators(
-				decor.EwmaETA(decor.ET_STYLE_GO, 90),
+				decor.Percentage(decor.WC{}),
 				decor.Name(" ] "),
 				decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60),
 			),
