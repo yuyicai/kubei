@@ -51,7 +51,7 @@ const (
 	HATypeExternalSLB           = "external"
 	DefaultNginxImageRepository = ""
 	DefaultNginxImageName       = "nginx"
-	DefaultNginxVersion         = "1.17"
+	DefaultNginxVersion         = "1.19.9"
 	DefaultNginxPort            = "6443"
 
 	LoopbackAddress = "127.0.0.1"
