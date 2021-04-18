@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	Registry   = "registry.aliyuncs.com"
-	Repository = "kubebin"
-	ImageName  = "kube-files"
+	Registry        = "registry.aliyuncs.com"
+	Repository      = "kubebin"
+	ImageName       = "kube-files"
+	KubeFileSubPath = ".kubei"
 )
 
 func KubeFiles(tag, destPath string) error {
@@ -25,7 +26,7 @@ func KubeFiles(tag, destPath string) error {
 		return err
 	}
 	if destPath == "" {
-		destPath = filepath.Join(home, ".kubei", tag)
+		destPath = filepath.Join(home, KubeFileSubPath, tag)
 	}
 
 	color.HiBlack("Downloading %s.tar.gz to %s", ImageName, destPath)

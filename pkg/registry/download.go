@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/heroku/docker-registry-client/registry"
@@ -31,21 +30,7 @@ func DownloadImage(imageUrl, user, password, destPath string) error {
 }
 
 func downloadImageFromRepository(hub *registry.Registry, repository, tag, destPath string) error {
-	file := fmt.Sprintf("%s_%s", strings.ReplaceAll(repository, "/", "-"), tag)
-	fw, err := os.Create(filepath.Join(destPath, file))
-	if err != nil {
-		return err
-	}
 
-	tw := tar.NewWriter(fw)
-	defer tw.Close()
-
-	_, err = hub.ManifestV2(repository, tag)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get repository %s manifestV2", repository)
-	}
-
-	// todo download image layer
 	return nil
 }
 
