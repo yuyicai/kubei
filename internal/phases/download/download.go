@@ -3,12 +3,11 @@ package download
 import (
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/yuyicai/kubei/pkg/image"
 	"path"
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
-
-	"github.com/yuyicai/kubei/pkg/registry"
 )
 
 const (
@@ -30,7 +29,7 @@ func KubeFiles(tag, destPath string) error {
 	}
 
 	color.HiBlack("Downloading %s.tar.gz to %s", ImageName, destPath)
-	if err := registry.DownloadFile(imageUrl, "", "", destPath); err != nil {
+	if err := image.DownloadFile(imageUrl, "", "", destPath); err != nil {
 		return err
 	}
 	color.HiGreen("done✅️")

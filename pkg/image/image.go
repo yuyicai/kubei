@@ -1,9 +1,10 @@
-package registry
+package image
 
 import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/distribution"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -14,21 +15,27 @@ import (
 	"github.com/heroku/docker-registry-client/registry"
 	"github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
+
+	pkgreg "github.com/yuyicai/kubei/pkg/registry"
 )
 
-type ImageOperator struct {
+type Operator struct {
+	SavePath     string
 	RegistryInfo RegistryInfo
 	Image        Image
 }
 
 type RegistryInfo struct {
-	Registry   string
-	Repository string
-	Scheme     string
-	client     *registry.Registry
+	Registry string
+	Scheme   string
+	User     string
+	Password string
+	client   *registry.Registry
 }
 
 type Image struct {
+	Repository   string
+	Name         string
 	Tag          string
 	Config       Config
 	LayersInfo   []LayerInfo
@@ -37,9 +44,8 @@ type Image struct {
 }
 
 type LayerInfo struct {
-	Digest       digest.Digest
-	VerifyDigest digest.Digest
-	Size         int64
+	distribution.Descriptor
+	DiffID       digest.Digest
 	CheckFile    bool
 	SaveFilePath string
 }
@@ -53,24 +59,25 @@ type RootFS struct {
 	DiffIDs []digest.Digest `json:"diff_ids,omitempty"`
 }
 
-func NewImageOperator(imageUrl string) (*ImageOperator, error) {
-	o := &ImageOperator{}
+func NewImageOperator(imageUrl, savePath string) (*Operator, error) {
+	o := &Operator{}
 	if err := o.setClient(imageUrl, "", ""); err != nil {
 		return nil, err
 	}
+	o.SavePath = savePath
 	return nil, nil
 }
 
-func NewImageOperatorSecure(imageUrl, user, password string) (*ImageOperator, error) {
-	o := &ImageOperator{}
+func NewImageOperatorSecure(imageUrl, savePath, user, password string) (*Operator, error) {
+	o := &Operator{}
 	if err := o.setClient(imageUrl, user, password); err != nil {
 		return nil, err
 	}
-
+	o.SavePath = savePath
 	return nil, nil
 }
 
-func (o *ImageOperator) checkImageUrl(imageUrl string) error {
+func (o *Operator) checkImageUrl(imageUrl string) error {
 	if strings.Contains(imageUrl, "@") {
 		return errors.New("unsupported digest")
 	}
@@ -96,17 +103,17 @@ func (o *ImageOperator) checkImageUrl(imageUrl string) error {
 		return errors.New("can not find tag")
 	}
 
-	o.RegistryInfo.Repository = strings.TrimPrefix(s[0], "/")
+	o.Image.Repository = strings.TrimPrefix(s[0], "/")
 	o.Image.Tag = s[1]
 	return err
 }
 
-func (o *ImageOperator) setClient(imageUrl, user, password string) error {
+func (o *Operator) setClient(imageUrl, user, password string) error {
 	if err := o.checkImageUrl(imageUrl); err != nil {
 		return err
 	}
 
-	reg, err := New(fmt.Sprintf("%s://%s", o.RegistryInfo.Scheme, o.RegistryInfo.Registry), user, password)
+	reg, err := pkgreg.New(fmt.Sprintf("%s://%s", o.RegistryInfo.Scheme, o.RegistryInfo.Registry), user, password)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create registry client whit registry url: %s",
 			o.RegistryInfo.Registry)
@@ -115,8 +122,8 @@ func (o *ImageOperator) setClient(imageUrl, user, password string) error {
 	return nil
 }
 
-func (o *ImageOperator) downloadConfig() error {
-	configBlob, err := o.RegistryInfo.client.DownloadBlob(o.RegistryInfo.Repository, o.Image.ConfigDigest)
+func (o *Operator) downloadConfig() error {
+	configBlob, err := o.RegistryInfo.client.DownloadBlob(o.Image.Repository, o.Image.ConfigDigest)
 	if err != nil {
 		return err
 	}
@@ -133,9 +140,41 @@ func (o *ImageOperator) downloadConfig() error {
 	return nil
 }
 
-func (o *ImageOperator) SaveLayers() error {
+func (o *Operator) setLayersInfo(layers []distribution.Descriptor) {
+	o.Image.LayersInfo = make([]LayerInfo, len(layers))
+	for i, m := range layers {
+		o.Image.LayersInfo[i].Descriptor = m
+		o.Image.LayersInfo[i].CheckFile = true
+		o.Image.LayersInfo[i].DiffID = o.Image.Config.RootFS.DiffIDs[i]
+		o.Image.LayersInfo[i].SaveFilePath = filepath.Join(o.SavePath, fmt.Sprintf("%s.%s",
+			o.Image.LayersInfo[i].DiffID.Encoded(), "tar"))
+	}
+}
+
+func (o *Operator) setImageManifestInfo() error {
+	manifestV2, err := o.RegistryInfo.client.ManifestV2(o.Image.Repository, o.Image.Tag)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get repository %s manifestV2", o.Image.Repository)
+	}
+
+	if err := o.downloadConfig(); err != nil {
+		return err
+	}
+
+	if len(manifestV2.Layers) != len(o.Image.Config.RootFS.DiffIDs) {
+		return errors.Errorf("bad image manifest info with %s", o.Image.Repository)
+	}
+
+	return nil
+}
+
+func (o *Operator) SaveLayers() error {
+	if err := o.setImageManifestInfo(); err != nil {
+		return err
+	}
+
 	for _, blobInfo := range o.Image.LayersInfo {
-		if err := saveLayer(o.RegistryInfo.client, o.RegistryInfo.Repository, blobInfo); err != nil {
+		if err := saveLayer(o.RegistryInfo.client, o.Image.Repository, blobInfo); err != nil {
 			return err
 		}
 	}

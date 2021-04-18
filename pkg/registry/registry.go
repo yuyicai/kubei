@@ -62,7 +62,7 @@ func newFromTransport(registryURL, username, password string, transport http.Rou
 	return r, nil
 }
 
-func checkImageUrl(imageUrl string) (image, error) {
+func CheckImageUrl(imageUrl string) (image, error) {
 	img := image{}
 
 	if strings.Contains(imageUrl, "@") {

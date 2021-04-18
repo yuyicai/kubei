@@ -1,10 +1,8 @@
-package registry
+package image
 
 import (
-	"archive/tar"
 	"fmt"
-	"os"
-	"path/filepath"
+
 	"time"
 
 	"github.com/heroku/docker-registry-client/registry"
@@ -13,16 +11,17 @@ import (
 	"github.com/vbauerster/mpb/v6/decor"
 	"k8s.io/klog"
 
+	pkgreg "github.com/yuyicai/kubei/pkg/registry"
 	"github.com/yuyicai/kubei/pkg/util"
 )
 
 func DownloadImage(imageUrl, user, password, destPath string) error {
-	img, err := checkImageUrl(imageUrl)
+	img, err := pkgreg.CheckImageUrl(imageUrl)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check image url: %s", imageUrl)
 	}
 
-	hub, err := New(fmt.Sprintf("%s://%s", img.Scheme, img.Registry), user, password)
+	hub, err := pkgreg.New(fmt.Sprintf("%s://%s", img.Scheme, img.Registry), user, password)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create registry client whit registry url: %s", img.Registry)
 	}
@@ -35,12 +34,12 @@ func downloadImageFromRepository(hub *registry.Registry, repository, tag, destPa
 }
 
 func DownloadFile(imageUrl, user, password, destPath string) error {
-	img, err := checkImageUrl(imageUrl)
+	img, err := pkgreg.CheckImageUrl(imageUrl)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check image url: %s", imageUrl)
 	}
 
-	hub, err := New(fmt.Sprintf("%s://%s", img.Scheme, img.Registry), user, password)
+	hub, err := pkgreg.New(fmt.Sprintf("%s://%s", img.Scheme, img.Registry), user, password)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create registry client whit registry url: %s", img.Registry)
 	}
