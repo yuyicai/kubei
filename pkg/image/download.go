@@ -28,6 +28,18 @@ func DownloadImage(imageUrl, user, password, destPath string) error {
 	return downloadImageFromRepository(hub, img.Repository, img.Tag, destPath)
 }
 
+func Download(imageUrl, savePath string) error {
+	operator, err := NewImageOperator(imageUrl, savePath)
+	if err != nil {
+		return err
+	}
+	if err := operator.SaveLayers(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func downloadImageFromRepository(hub *registry.Registry, repository, tag, destPath string) error {
 
 	return nil

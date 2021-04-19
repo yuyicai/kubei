@@ -2,19 +2,24 @@ package image
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/docker/distribution"
 	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/docker/distribution"
+	"github.com/go-kratos/kratos/pkg/sync/errgroup"
 	"github.com/heroku/docker-registry-client/registry"
 	"github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
+	"github.com/vbauerster/mpb/v6"
+	"github.com/vbauerster/mpb/v6/decor"
 
 	pkgreg "github.com/yuyicai/kubei/pkg/registry"
 )
@@ -65,7 +70,7 @@ func NewImageOperator(imageUrl, savePath string) (*Operator, error) {
 		return nil, err
 	}
 	o.SavePath = savePath
-	return nil, nil
+	return o, nil
 }
 
 func NewImageOperatorSecure(imageUrl, savePath, user, password string) (*Operator, error) {
@@ -157,6 +162,8 @@ func (o *Operator) setImageManifestInfo() error {
 		return errors.Wrapf(err, "failed to get repository %s manifestV2", o.Image.Repository)
 	}
 
+	o.Image.ConfigDigest = manifestV2.Config.Digest
+
 	if err := o.downloadConfig(); err != nil {
 		return err
 	}
@@ -164,6 +171,8 @@ func (o *Operator) setImageManifestInfo() error {
 	if len(manifestV2.Layers) != len(o.Image.Config.RootFS.DiffIDs) {
 		return errors.Errorf("bad image manifest info with %s", o.Image.Repository)
 	}
+
+	o.setLayersInfo(manifestV2.Layers)
 
 	return nil
 }
@@ -173,15 +182,39 @@ func (o *Operator) SaveLayers() error {
 		return err
 	}
 
+	p := mpb.New(
+		mpb.WithWidth(80),
+		mpb.WithRefreshRate(180*time.Millisecond),
+	)
+
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(5)
+
 	for _, blobInfo := range o.Image.LayersInfo {
-		if err := saveLayer(o.RegistryInfo.client, o.Image.Repository, blobInfo); err != nil {
-			return err
-		}
+		bar := p.Add(
+			blobInfo.Size,
+			mpb.NewBarFiller("[=>-|"),
+			mpb.PrependDecorators(
+				decor.Name(fmt.Sprintf("digest:%s diffID:%s",
+					blobInfo.Digest.Encoded()[:12], blobInfo.DiffID.Encoded()[:12])),
+			),
+			mpb.AppendDecorators(
+				decor.Percentage(decor.WC{}),
+				decor.Name(" ] "),
+			),
+		)
+
+		blobInfo := blobInfo
+		g.Go(func(ctx context.Context) error {
+			return saveLayer(o.RegistryInfo.client, o.Image.Repository, blobInfo, bar)
+		})
+
 	}
-	return nil
+
+	return g.Wait()
 }
 
-func saveLayer(reg *registry.Registry, repo string, blobInfo LayerInfo) error {
+func saveLayer(reg *registry.Registry, repo string, blobInfo LayerInfo, bar *mpb.Bar) error {
 	if err := os.MkdirAll(filepath.Dir(blobInfo.SaveFilePath), 0755); err != nil {
 		return err
 	}
@@ -192,7 +225,10 @@ func saveLayer(reg *registry.Registry, repo string, blobInfo LayerInfo) error {
 	}
 	defer blob.Close()
 
-	gr, err := gzip.NewReader(blob)
+	proxyReader := bar.ProxyReader(blob)
+	defer proxyReader.Close()
+
+	gr, err := gzip.NewReader(proxyReader)
 	if err != nil {
 		return err
 	}

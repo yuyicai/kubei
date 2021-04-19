@@ -36,9 +36,7 @@ func TestDownloadFile(t *testing.T) {
 func TestDownloadImage(t *testing.T) {
 	type args struct {
 		imageUrl string
-		user     string
-		password string
-		destPath string
+		savePath string
 	}
 	tests := []struct {
 		name    string
@@ -49,14 +47,14 @@ func TestDownloadImage(t *testing.T) {
 			name: "downlaod nginx 1.19.9",
 			args: args{
 				imageUrl: "registry.cn-hangzhou.aliyuncs.com/kubebin/nginx:1.19.9",
-				destPath: "/app/.kubei",
+				savePath: "/app/.kubei/tmp",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := DownloadImage(tt.args.imageUrl, tt.args.user, tt.args.password, tt.args.destPath); (err != nil) != tt.wantErr {
-				t.Errorf("DownloadImage() error = %v, wantErr %v", err, tt.wantErr)
+			if err := Download(tt.args.imageUrl, tt.args.savePath); (err != nil) != tt.wantErr {
+				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
