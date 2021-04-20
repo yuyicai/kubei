@@ -26,7 +26,8 @@ func TestDownloadFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := DownloadFile(tt.args.imageUrl, tt.args.user, tt.args.password, tt.args.destPath); (err != nil) != tt.wantErr {
+			if err := DownloadFile(tt.args.imageUrl, tt.args.user, tt.args.password,
+				tt.args.destPath); (err != nil) != tt.wantErr {
 				t.Errorf("DownloadFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -144,6 +144,20 @@ func (o *Operator) downloadConfig() error {
 	if err := json.Unmarshal(o.Image.configBytes, &o.Image.Config); err != nil {
 		return err
 	}
+	return o.saveImageConfig()
+}
+
+func (o *Operator) saveImageConfig() error {
+	file, err := os.Create(filepath.Join(o.CachePath, fmt.Sprintf("%s.%s", o.Image.ConfigDigest.Encoded(), "json")))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(o.Image.configBytes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
