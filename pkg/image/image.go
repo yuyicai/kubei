@@ -1,7 +1,6 @@
 package image
 
 import (
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -152,7 +151,7 @@ func (o *Operator) setLayersInfo(layers []distribution.Descriptor) {
 		o.Image.LayersInfo[i].CheckFile = true
 		o.Image.LayersInfo[i].DiffID = o.Image.Config.RootFS.DiffIDs[i]
 		o.Image.LayersInfo[i].SaveFilePath = filepath.Join(o.SavePath, fmt.Sprintf("%s.%s",
-			o.Image.LayersInfo[i].DiffID.Encoded(), "tar"))
+			o.Image.LayersInfo[i].Digest.Encoded(), "tar"))
 	}
 }
 
@@ -195,8 +194,7 @@ func (o *Operator) SaveLayers() error {
 			blobInfo.Size,
 			mpb.NewBarFiller("[=>-|"),
 			mpb.PrependDecorators(
-				decor.Name(fmt.Sprintf("digest:%s diffID:%s",
-					blobInfo.Digest.Encoded()[:12], blobInfo.DiffID.Encoded()[:12])),
+				decor.Name(blobInfo.Digest.Encoded()[:12]),
 			),
 			mpb.AppendDecorators(
 				decor.Percentage(decor.WC{}),
@@ -228,19 +226,13 @@ func saveLayer(reg *registry.Registry, repo string, blobInfo LayerInfo, bar *mpb
 	proxyReader := bar.ProxyReader(blob)
 	defer proxyReader.Close()
 
-	gr, err := gzip.NewReader(proxyReader)
-	if err != nil {
-		return err
-	}
-	defer gr.Close()
-
 	file, err := os.Create(blobInfo.SaveFilePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	_, err = io.Copy(file, gr)
+	_, err = io.Copy(file, proxyReader)
 	if err != nil {
 		return err
 	}
