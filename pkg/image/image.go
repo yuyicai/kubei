@@ -25,6 +25,7 @@ import (
 
 type Operator struct {
 	SavePath     string
+	CachePath    string
 	RegistryInfo RegistryInfo
 	Image        Image
 }
@@ -63,21 +64,23 @@ type RootFS struct {
 	DiffIDs []digest.Digest `json:"diff_ids,omitempty"`
 }
 
-func NewImageOperator(imageUrl, savePath string) (*Operator, error) {
+func NewImageOperator(imageUrl, savePath, cachePath string) (*Operator, error) {
 	o := &Operator{}
 	if err := o.setClient(imageUrl, "", ""); err != nil {
 		return nil, err
 	}
 	o.SavePath = savePath
+	o.CachePath = cachePath
 	return o, nil
 }
 
-func NewImageOperatorSecure(imageUrl, savePath, user, password string) (*Operator, error) {
+func NewImageOperatorSecure(imageUrl, savePath, cachePath, user, password string) (*Operator, error) {
 	o := &Operator{}
 	if err := o.setClient(imageUrl, user, password); err != nil {
 		return nil, err
 	}
 	o.SavePath = savePath
+	o.CachePath = cachePath
 	return nil, nil
 }
 
@@ -150,7 +153,7 @@ func (o *Operator) setLayersInfo(layers []distribution.Descriptor) {
 		o.Image.LayersInfo[i].Descriptor = m
 		o.Image.LayersInfo[i].CheckFile = true
 		o.Image.LayersInfo[i].DiffID = o.Image.Config.RootFS.DiffIDs[i]
-		o.Image.LayersInfo[i].SaveFilePath = filepath.Join(o.SavePath, fmt.Sprintf("%s.%s",
+		o.Image.LayersInfo[i].SaveFilePath = filepath.Join(o.CachePath, fmt.Sprintf("%s.%s",
 			o.Image.LayersInfo[i].Digest.Encoded(), "tar"))
 	}
 }

@@ -28,8 +28,8 @@ func DownloadImage(imageUrl, user, password, destPath string) error {
 	return downloadImageFromRepository(hub, img.Repository, img.Tag, destPath)
 }
 
-func Download(imageUrl, savePath string) error {
-	operator, err := NewImageOperator(imageUrl, savePath)
+func Download(imageUrl, savePath, cachePath string) error {
+	operator, err := NewImageOperator(imageUrl, savePath, cachePath)
 	if err != nil {
 		return err
 	}
