@@ -1,6 +1,7 @@
 package image
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -56,9 +57,20 @@ func TestDownloadImage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Download(tt.args.imageUrl, tt.args.savePath, tt.args.cachePath); (err != nil) != tt.wantErr {
-				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
+			if err := DownloadImage(tt.args.imageUrl, tt.args.savePath, tt.args.cachePath); (err != nil) != tt.wantErr {
+				t.Errorf("DownloadImage() error = %+v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
+}
+
+func TestString(t *testing.T) {
+	strImage := "test"
+	stri := strings.Trim(strImage, "/")
+	t.Log(stri)
+	t.Run("test", func(t *testing.T) {
+		ss := strings.SplitN(stri, "/", 2)
+		t.Log(ss)
+		t.Log(ss[len(ss)-1])
+	})
 }

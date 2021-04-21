@@ -15,33 +15,14 @@ import (
 	"github.com/yuyicai/kubei/pkg/util"
 )
 
-func DownloadImage(imageUrl, user, password, destPath string) error {
-	img, err := pkgreg.CheckImageUrl(imageUrl)
-	if err != nil {
-		return errors.Wrapf(err, "failed to check image url: %s", imageUrl)
-	}
-
-	hub, err := pkgreg.New(fmt.Sprintf("%s://%s", img.Scheme, img.Registry), user, password)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create registry client whit registry url: %s", img.Registry)
-	}
-	return downloadImageFromRepository(hub, img.Repository, img.Tag, destPath)
-}
-
-func Download(imageUrl, savePath, cachePath string) error {
+func DownloadImage(imageUrl, savePath, cachePath string) error {
 	operator, err := NewImageOperator(imageUrl, savePath, cachePath)
 	if err != nil {
 		return err
 	}
-	if err := operator.SaveLayers(); err != nil {
+	if err := operator.SaveImage(); err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func downloadImageFromRepository(hub *registry.Registry, repository, tag, destPath string) error {
-
 	return nil
 }
 

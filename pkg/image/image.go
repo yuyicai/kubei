@@ -1,6 +1,7 @@
 package image
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,6 +24,12 @@ import (
 	pkgreg "github.com/yuyicai/kubei/pkg/registry"
 )
 
+const (
+	manifestFileName     = "manifest.json"
+	legacyConfigFileName = "json"
+	legacyLayerFileName  = "tar"
+)
+
 type Operator struct {
 	SavePath     string
 	CachePath    string
@@ -42,10 +49,17 @@ type Image struct {
 	Repository   string
 	Name         string
 	Tag          string
+	ManifestItem ManifestItem
 	Config       Config
 	LayersInfo   []LayerInfo
 	ConfigDigest digest.Digest
 	configBytes  []byte
+}
+
+type ManifestItem struct {
+	Config   string
+	RepoTags []string
+	Layers   []string
 }
 
 type LayerInfo struct {
@@ -84,6 +98,50 @@ func NewImageOperatorSecure(imageUrl, savePath, cachePath, user, password string
 	return nil, nil
 }
 
+func (o *Operator) SaveImage() error {
+	if err := o.DownloadLayers(); err != nil {
+		return err
+	}
+
+	return o.saveImage()
+}
+
+func (o *Operator) DownloadLayers() error {
+	if err := o.setImageManifestInfo(); err != nil {
+		return err
+	}
+
+	p := mpb.New(
+		mpb.WithWidth(80),
+		mpb.WithRefreshRate(180*time.Millisecond),
+	)
+
+	g := errgroup.WithCancel(context.Background())
+	g.GOMAXPROCS(5)
+
+	for _, blobInfo := range o.Image.LayersInfo {
+		bar := p.Add(
+			blobInfo.Size,
+			mpb.NewBarFiller("[=>-|"),
+			mpb.PrependDecorators(
+				decor.Name(blobInfo.Digest.Encoded()[:12]),
+			),
+			mpb.AppendDecorators(
+				decor.Percentage(decor.WC{}),
+				decor.Name(" ] "),
+			),
+		)
+
+		blobInfo := blobInfo
+		g.Go(func(ctx context.Context) error {
+			return downloadLayer(o.RegistryInfo.client, o.Image.Repository, blobInfo, bar)
+		})
+
+	}
+
+	return g.Wait()
+}
+
 func (o *Operator) checkImageUrl(imageUrl string) error {
 	if strings.Contains(imageUrl, "@") {
 		return errors.New("unsupported digest")
@@ -93,24 +151,22 @@ func (o *Operator) checkImageUrl(imageUrl string) error {
 		imageUrl = fmt.Sprintf("https://%s", imageUrl)
 	}
 
-	registryUri, err := url.Parse(imageUrl)
+	registryURL, err := url.Parse(imageUrl)
 	if err != nil {
 		return err
 	}
 
-	o.RegistryInfo.Registry = registryUri.Host
-	o.RegistryInfo.Scheme = registryUri.Scheme
+	o.RegistryInfo.Registry = registryURL.Host
+	o.RegistryInfo.Scheme = registryURL.Scheme
 
-	if !strings.Contains(registryUri.Path, ":") {
-		return errors.New("can not find tag")
-	}
-
-	s := strings.SplitN(registryUri.Path, ":", 2)
+	s := strings.SplitN(registryURL.Path, ":", 2)
 	if len(s) != 2 {
 		return errors.New("can not find tag")
 	}
 
-	o.Image.Repository = strings.TrimPrefix(s[0], "/")
+	o.Image.Repository = strings.Trim(s[0], "/")
+	names := strings.Split(o.Image.Repository, "/")
+	o.Image.Name = names[len(names)-1]
 	o.Image.Tag = s[1]
 	return err
 }
@@ -144,13 +200,15 @@ func (o *Operator) downloadConfig() error {
 	if err := json.Unmarshal(o.Image.configBytes, &o.Image.Config); err != nil {
 		return err
 	}
-	return o.saveImageConfig()
-}
 
-func (o *Operator) saveImageConfig() error {
-	file, err := os.Create(filepath.Join(o.CachePath, fmt.Sprintf("%s.%s", o.Image.ConfigDigest.Encoded(), "json")))
-	if err != nil {
+	if err := os.MkdirAll(o.CachePath, 0755); err != nil {
 		return err
+	}
+
+	file, err := os.Create(filepath.Join(o.CachePath, fmt.Sprintf("%s.%s",
+		o.Image.ConfigDigest.Encoded(), legacyConfigFileName)))
+	if err != nil {
+		return errors.WithStack(err)
 	}
 	defer file.Close()
 
@@ -193,43 +251,39 @@ func (o *Operator) setImageManifestInfo() error {
 	return nil
 }
 
-func (o *Operator) SaveLayers() error {
-	if err := o.setImageManifestInfo(); err != nil {
-		return err
+func (o *Operator) saveImage() error {
+	file, err := os.Create(filepath.Join(o.SavePath,
+		fmt.Sprintf("%s_%s.%s", o.Image.Name, o.Image.Tag, legacyLayerFileName)))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer file.Close()
+
+	tw := tar.NewWriter(file)
+	defer tw.Close()
+
+	for _, l := range o.Image.LayersInfo {
+		if err := sendLayerToTar(l, tw); err != nil {
+			return err
+		}
 	}
 
-	p := mpb.New(
-		mpb.WithWidth(80),
-		mpb.WithRefreshRate(180*time.Millisecond),
-	)
-
-	g := errgroup.WithCancel(context.Background())
-	g.GOMAXPROCS(5)
-
-	for _, blobInfo := range o.Image.LayersInfo {
-		bar := p.Add(
-			blobInfo.Size,
-			mpb.NewBarFiller("[=>-|"),
-			mpb.PrependDecorators(
-				decor.Name(blobInfo.Digest.Encoded()[:12]),
-			),
-			mpb.AppendDecorators(
-				decor.Percentage(decor.WC{}),
-				decor.Name(" ] "),
-			),
-		)
-
-		blobInfo := blobInfo
-		g.Go(func(ctx context.Context) error {
-			return saveLayer(o.RegistryInfo.client, o.Image.Repository, blobInfo, bar)
-		})
-
+	if err := tw.WriteHeader(&tar.Header{
+		Name: fmt.Sprintf("%s.%s", o.Image.ConfigDigest.Encoded(), legacyConfigFileName),
+		Mode: 644,
+		Size: int64(len(o.Image.configBytes)),
+	}); err != nil {
+		return errors.WithStack(err)
+	}
+	_, err = tw.Write(o.Image.configBytes)
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
-	return g.Wait()
+	return nil
 }
 
-func saveLayer(reg *registry.Registry, repo string, blobInfo LayerInfo, bar *mpb.Bar) error {
+func downloadLayer(reg *registry.Registry, repo string, blobInfo LayerInfo, bar *mpb.Bar) error {
 	if err := os.MkdirAll(filepath.Dir(blobInfo.SaveFilePath), 0755); err != nil {
 		return err
 	}
@@ -254,5 +308,41 @@ func saveLayer(reg *registry.Registry, repo string, blobInfo LayerInfo, bar *mpb
 		return err
 	}
 
+	return nil
+}
+
+func sendLayerToTar(layer LayerInfo, tw *tar.Writer) error {
+	f, err := os.Open(layer.SaveFilePath)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer f.Close()
+
+	//gr, err := gzip.NewReader(f)
+	//if err != nil {
+	//	return errors.WithStack(err)
+	//}
+	//defer gr.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	hdr, err := tar.FileInfoHeader(fi, "")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	hdr.Mode = 644
+	hdr.Name = fmt.Sprintf("%s.%s", layer.DiffID.Encoded(), legacyLayerFileName)
+
+	if err := tw.WriteHeader(hdr); err != nil {
+		return errors.WithStack(err)
+	}
+
+	_, err = io.Copy(tw, f)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	return nil
 }
