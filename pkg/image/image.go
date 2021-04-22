@@ -128,7 +128,9 @@ func (o *Operator) DownloadLayers() error {
 				decor.Name(blobInfo.Digest.Encoded()[:12]),
 			),
 			mpb.AppendDecorators(
-				decor.Percentage(decor.WC{}),
+				decor.OnComplete(
+					decor.Percentage(decor.WC{}), "done",
+				),
 				decor.Name(" ] "),
 			),
 		)
@@ -140,7 +142,13 @@ func (o *Operator) DownloadLayers() error {
 
 	}
 
-	return g.Wait()
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	p.Wait()
+
+	return nil
 }
 
 func (o *Operator) checkImageUrl(imageUrl string) error {
@@ -319,6 +327,7 @@ func downloadLayer(reg *registry.Registry, repo string, layer LayerInfo, bar *mp
 	klog.V(5).Infof("validating the existence of file %s", layer.SaveFilePath)
 	if layerExists(layer) {
 		klog.V(5).Infof("the file %s already exists", layer.SaveFilePath)
+		bar.SetTotal(100, true)
 		return nil
 	}
 	klog.Infof("the file %s file does not exist, downloading...", layer.SaveFilePath)
