@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vbauerster/mpb/v6"
 	"github.com/vbauerster/mpb/v6/decor"
+	"k8s.io/klog"
 
 	pkgreg "github.com/yuyicai/kubei/pkg/registry"
 )
@@ -251,6 +252,16 @@ func (o *Operator) setImageManifestInfo() error {
 	return nil
 }
 
+func (o *Operator) setManifestItem() {
+	o.Image.ManifestItem.Config = fmt.Sprintf("%s.%s", o.Image.ConfigDigest.Encoded(), legacyConfigFileName)
+	o.Image.ManifestItem.RepoTags = append(o.Image.ManifestItem.RepoTags,
+		fmt.Sprintf("%s/%s:%s", o.RegistryInfo.Registry, o.Image.Repository, o.Image.Tag))
+	for _, l := range o.Image.LayersInfo {
+		o.Image.ManifestItem.Layers = append(o.Image.ManifestItem.Layers,
+			fmt.Sprintf("%s.%s", l.Digest.Encoded(), legacyLayerFileName))
+	}
+}
+
 func (o *Operator) saveImage() error {
 	file, err := os.Create(filepath.Join(o.SavePath,
 		fmt.Sprintf("%s_%s.%s", o.Image.Name, o.Image.Tag, legacyLayerFileName)))
@@ -263,7 +274,7 @@ func (o *Operator) saveImage() error {
 	defer tw.Close()
 
 	for _, l := range o.Image.LayersInfo {
-		if err := sendLayerToTar(l, tw); err != nil {
+		if err := archiveLayer(l, tw); err != nil {
 			return err
 		}
 	}
@@ -280,24 +291,51 @@ func (o *Operator) saveImage() error {
 		return errors.WithStack(err)
 	}
 
+	o.setManifestItem()
+	manifestItems := []ManifestItem{
+		o.Image.ManifestItem,
+	}
+	manifestItemsByte, err := json.Marshal(&manifestItems)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if err := tw.WriteHeader(&tar.Header{
+		Name: manifestFileName,
+		Mode: 644,
+		Size: int64(len(manifestItemsByte)),
+	}); err != nil {
+		return errors.WithStack(err)
+	}
+	_, err = tw.Write(manifestItemsByte)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	return nil
 }
 
-func downloadLayer(reg *registry.Registry, repo string, blobInfo LayerInfo, bar *mpb.Bar) error {
-	if err := os.MkdirAll(filepath.Dir(blobInfo.SaveFilePath), 0755); err != nil {
+func downloadLayer(reg *registry.Registry, repo string, layer LayerInfo, bar *mpb.Bar) error {
+	klog.V(5).Infof("validating the existence of file %s", layer.SaveFilePath)
+	if layerExists(layer) {
+		klog.V(5).Infof("the file %s already exists", layer.SaveFilePath)
+		return nil
+	}
+	klog.Infof("the file %s file does not exist, downloading...", layer.SaveFilePath)
+	if err := os.MkdirAll(filepath.Dir(layer.SaveFilePath), 0755); err != nil {
 		return err
 	}
 
-	blob, err := reg.DownloadBlob(repo, blobInfo.Digest)
+	blob, err := reg.DownloadBlob(repo, layer.Digest)
 	if err != nil {
-		errors.Wrapf(err, "failed to download blob: %s/%s", repo, blobInfo.Digest)
+		errors.Wrapf(err, "failed to download blob: %s/%s", repo, layer.Digest)
 	}
 	defer blob.Close()
 
 	proxyReader := bar.ProxyReader(blob)
 	defer proxyReader.Close()
 
-	file, err := os.Create(blobInfo.SaveFilePath)
+	file, err := os.Create(layer.SaveFilePath)
 	if err != nil {
 		return err
 	}
@@ -311,18 +349,12 @@ func downloadLayer(reg *registry.Registry, repo string, blobInfo LayerInfo, bar 
 	return nil
 }
 
-func sendLayerToTar(layer LayerInfo, tw *tar.Writer) error {
+func archiveLayer(layer LayerInfo, tw *tar.Writer) error {
 	f, err := os.Open(layer.SaveFilePath)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	defer f.Close()
-
-	//gr, err := gzip.NewReader(f)
-	//if err != nil {
-	//	return errors.WithStack(err)
-	//}
-	//defer gr.Close()
 
 	fi, err := f.Stat()
 	if err != nil {
@@ -334,7 +366,7 @@ func sendLayerToTar(layer LayerInfo, tw *tar.Writer) error {
 		return errors.WithStack(err)
 	}
 	hdr.Mode = 644
-	hdr.Name = fmt.Sprintf("%s.%s", layer.DiffID.Encoded(), legacyLayerFileName)
+	hdr.Name = fmt.Sprintf("%s.%s", layer.Digest.Encoded(), legacyLayerFileName)
 
 	if err := tw.WriteHeader(hdr); err != nil {
 		return errors.WithStack(err)
@@ -345,4 +377,23 @@ func sendLayerToTar(layer LayerInfo, tw *tar.Writer) error {
 		return errors.WithStack(err)
 	}
 	return nil
+}
+
+func layerExists(layer LayerInfo) bool {
+	_, err := os.Stat(layer.SaveFilePath)
+	if os.IsNotExist(err) {
+		return false
+	}
+
+	existFile, err := os.Open(layer.SaveFilePath)
+	if err != nil {
+		return false
+	}
+
+	verifier := layer.Digest.Verifier()
+	_, err = io.Copy(verifier, existFile)
+	if err != nil {
+		return false
+	}
+	return verifier.Verified()
 }

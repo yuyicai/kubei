@@ -1,8 +1,11 @@
 package image
 
 import (
+	"flag"
 	"strings"
 	"testing"
+
+	"k8s.io/klog"
 )
 
 func TestDownloadFile(t *testing.T) {
@@ -36,6 +39,9 @@ func TestDownloadFile(t *testing.T) {
 }
 
 func TestDownloadImage(t *testing.T) {
+	klog.InitFlags(nil)
+	flag.Set("v", "8")
+	flag.Parse()
 	type args struct {
 		imageUrl  string
 		savePath  string
@@ -47,9 +53,9 @@ func TestDownloadImage(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "downlaod nginx 1.19.9",
+			name: "downlaod nginx 1.17.10",
 			args: args{
-				imageUrl:  "registry.cn-hangzhou.aliyuncs.com/kubebin/nginx:1.19.9",
+				imageUrl:  "registry.cn-hangzhou.aliyuncs.com/kubebin/nginx:1.17.10",
 				savePath:  "/app/.kubei/images",
 				cachePath: "/app/.kubei/tmp",
 			},
