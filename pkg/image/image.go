@@ -345,9 +345,10 @@ func downloadLayer(reg *registry.Registry, repo string, layer LayerInfo, bar *mp
 		bar.SetTotal(100, true)
 		return nil
 	}
+
 	klog.V(5).Infof("the file %s file does not exist, downloading...", layer.SaveFilePath)
 	if err := os.MkdirAll(filepath.Dir(layer.SaveFilePath), 0755); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	blob, err := reg.DownloadBlob(repo, layer.Digest)
@@ -361,13 +362,19 @@ func downloadLayer(reg *registry.Registry, repo string, layer LayerInfo, bar *mp
 
 	file, err := os.Create(layer.SaveFilePath)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	defer file.Close()
 
-	_, err = io.Copy(file, proxyReader)
+	verifier := layer.Digest.Verifier()
+
+	_, err = io.Copy(file, io.TeeReader(proxyReader, verifier))
 	if err != nil {
-		return err
+		return errors.WithStack(err)
+	}
+
+	if !verifier.Verified() {
+		return errors.Errorf("layer verification failed for digest %s", layer.Digest)
 	}
 
 	return nil
@@ -396,10 +403,17 @@ func archiveLayer(layer LayerInfo, tw *tar.Writer) error {
 		return errors.WithStack(err)
 	}
 
-	_, err = io.Copy(tw, f)
+	verifier := layer.Digest.Verifier()
+
+	_, err = io.Copy(tw, io.TeeReader(f, verifier))
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	if !verifier.Verified() {
+		return errors.Errorf("layer verification failed for digest %s", layer.Digest)
+	}
+
 	return nil
 }
 
@@ -419,5 +433,6 @@ func layerExists(layer LayerInfo) bool {
 	if err != nil {
 		return false
 	}
+
 	return verifier.Verified()
 }

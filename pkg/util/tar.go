@@ -6,12 +6,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
 
 func DecompressToFile(r io.Reader, destPath string) error {
 	gr, err := gzip.NewReader(r)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	defer gr.Close()
 	tr := tar.NewReader(gr)
@@ -21,13 +23,13 @@ func DecompressToFile(r io.Reader, destPath string) error {
 			if err == io.EOF {
 				break
 			} else {
-				return err
+				return errors.WithStack(err)
 			}
 		}
 		filename := filepath.Join(destPath, hdr.Name)
 		file, err := createFile(filename)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		io.Copy(file, tr)
 	}
@@ -37,7 +39,7 @@ func DecompressToFile(r io.Reader, destPath string) error {
 func createFile(name string) (*os.File, error) {
 	err := os.MkdirAll(filepath.Dir(name), 0755)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return os.Create(name)
 }
@@ -48,12 +50,12 @@ func tarFromReader(r io.Reader, name string, size int64, tw *tar.Writer) error {
 		Size: size,
 		Name: name,
 	}); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	_, err := io.Copy(tw, r)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
