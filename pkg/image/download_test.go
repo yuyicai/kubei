@@ -9,11 +9,13 @@ import (
 )
 
 func TestDownloadFile(t *testing.T) {
+	klog.InitFlags(nil)
+	flag.Set("v", "8")
+	flag.Parse()
 	type args struct {
-		imageUrl string
-		user     string
-		password string
-		destPath string
+		imageUrl  string
+		savePath  string
+		cachePath string
 	}
 	tests := []struct {
 		name    string
@@ -23,15 +25,15 @@ func TestDownloadFile(t *testing.T) {
 		{
 			name: "download from aliyun",
 			args: args{
-				imageUrl: "registry.cn-hangzhou.aliyuncs.com/kubebin/kube-files:v1.20.0-test",
-				destPath: "/app/kube/v1.20.0",
+				imageUrl:  "registry.cn-hangzhou.aliyuncs.com/kubebin/kube-files:v1.20.0-test",
+				savePath:  "/app/.kubei/kube/v1.20.0",
+				cachePath: "/app/.kubei/tmp",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := DownloadFile(tt.args.imageUrl, tt.args.user, tt.args.password,
-				tt.args.destPath); (err != nil) != tt.wantErr {
+			if err := DownloadFile(tt.args.imageUrl, tt.args.savePath, tt.args.cachePath); (err != nil) != tt.wantErr {
 				t.Errorf("DownloadFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

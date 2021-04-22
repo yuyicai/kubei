@@ -25,11 +25,14 @@ func KubeFiles(tag, destPath string) error {
 		return err
 	}
 	if destPath == "" {
-		destPath = filepath.Join(home, KubeFileSubPath, tag)
+		destPath = filepath.Join(home, KubeFileSubPath)
 	}
 
-	color.HiBlack("Downloading %s.tar.gz to %s", ImageName, destPath)
-	if err := image.DownloadFile(imageUrl, "", "", destPath); err != nil {
+	savePath := filepath.Join(destPath, "kube", tag)
+	cachePath := filepath.Join(destPath, "tmp")
+
+	color.HiBlack("Downloading %s.tar.gz to %s", ImageName, savePath)
+	if err := image.DownloadFile(imageUrl, savePath, cachePath); err != nil {
 		return err
 	}
 	color.HiGreen("done✅️")

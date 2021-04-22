@@ -23,6 +23,7 @@ import (
 	"k8s.io/klog"
 
 	pkgreg "github.com/yuyicai/kubei/pkg/registry"
+	"github.com/yuyicai/kubei/pkg/util"
 )
 
 const (
@@ -107,6 +108,13 @@ func (o *Operator) SaveImage() error {
 	return o.saveImage()
 }
 
+func (o *Operator) SaveLayersFiles() error {
+	if err := o.DownloadLayers(); err != nil {
+		return err
+	}
+	return o.saveLayersFiles()
+}
+
 func (o *Operator) DownloadLayers() error {
 	if err := o.setImageManifestInfo(); err != nil {
 		return err
@@ -142,13 +150,7 @@ func (o *Operator) DownloadLayers() error {
 
 	}
 
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	p.Wait()
-
-	return nil
+	return g.Wait()
 }
 
 func (o *Operator) checkImageUrl(imageUrl string) error {
@@ -323,6 +325,19 @@ func (o *Operator) saveImage() error {
 	return nil
 }
 
+func (o *Operator) saveLayersFiles() error {
+	for _, l := range o.Image.LayersInfo {
+		file, err := os.Open(l.SaveFilePath)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		if err := util.DecompressToFile(file, o.SavePath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func downloadLayer(reg *registry.Registry, repo string, layer LayerInfo, bar *mpb.Bar) error {
 	klog.V(5).Infof("validating the existence of file %s", layer.SaveFilePath)
 	if layerExists(layer) {
@@ -330,7 +345,7 @@ func downloadLayer(reg *registry.Registry, repo string, layer LayerInfo, bar *mp
 		bar.SetTotal(100, true)
 		return nil
 	}
-	klog.Infof("the file %s file does not exist, downloading...", layer.SaveFilePath)
+	klog.V(5).Infof("the file %s file does not exist, downloading...", layer.SaveFilePath)
 	if err := os.MkdirAll(filepath.Dir(layer.SaveFilePath), 0755); err != nil {
 		return err
 	}
