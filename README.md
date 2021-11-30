@@ -40,6 +40,7 @@ https://github.com/yuyicai/kubei/releases
 
 **2、下载离线包：**  
 离线包从阿里云镜像仓库下载提取，方便快速
+若没有你需要的版本，可以参照这里的脚本制作离线包：https://github.com/yuyicai/kubebin
 
 ```
 ./kubei download
