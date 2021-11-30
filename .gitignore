@@ -16,3 +16,4 @@ kubei
 dist/
 
 test_*
+main
